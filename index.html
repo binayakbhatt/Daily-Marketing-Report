@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,8 +13,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
   <script src="./app.js" defer></script>
 </head>
 
@@ -133,7 +132,7 @@
           </div>
 
           <div class="field">
-            <label for="bpm_accompanied">BPM Accompanied?</label>
+            <label for="bpm_accompanied">BPM / ABPM Accompanied?</label>
             <select id="bpm_accompanied" name="bpm_accompanied">
               <option value="No">No</option>
               <option value="Yes">Yes</option>
@@ -340,7 +339,7 @@
           <i data-lucide="rotate-ccw"></i> Reset Form
         </button>
         <button type="button" id="pdfButton" class="button button-outline">
-          <i data-lucide="file-down"></i> Export PDF
+          <i data-lucide="file-down"></i> Download as PDF
         </button>
         <button type="submit" id="submitButton" class="button button-primary">
           <i data-lucide="cloud-upload"></i> Submit Report
