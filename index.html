@@ -95,11 +95,6 @@
                     <p class="text-xs text-slate-400">Daily Marketing Report</p>
                 </div>
             </div>
-            <div class="flex items-center space-x-2">
-                <button onclick="openSettingsModal()" class="p-2.5 glass-card rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white" title="Supabase Settings">
-                    <i data-lucide="database" class="w-5 h-5"></i>
-                </button>
-            </div>
         </div>
     </header>
 
@@ -350,37 +345,6 @@
         </form>
     </main>
 
-    <!-- Supabase Configuration Modal -->
-    <div id="settingsModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="glass-card max-w-md w-full p-6 space-y-4 border border-slate-700 shadow-2xl">
-            <div class="flex items-center justify-between">
-                <h3 class="font-bold text-lg text-white flex items-center gap-2">
-                    <i data-lucide="database" class="w-5 h-5 text-sky-400"></i> Supabase Configuration
-                </h3>
-                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white p-1">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-            <p class="text-xs text-slate-300">Enter your Supabase project credentials to enable cloud sync. Credentials are saved locally on this device.</p>
-            
-            <div class="space-y-3">
-                <div>
-                    <label class="glass-label">Supabase URL</label>
-                    <input type="text" id="supabaseUrlInput" class="glass-input" placeholder="https://xyz.supabase.co">
-                </div>
-                <div>
-                    <label class="glass-label">Supabase Anon Key</label>
-                    <input type="password" id="supabaseKeyInput" class="glass-input" placeholder="eyJhbGciOi...">
-                </div>
-            </div>
-
-            <div class="flex justify-end gap-3 pt-2">
-                <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium">Cancel</button>
-                <button type="button" onclick="saveSupabaseConfig()" class="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-semibold shadow-lg">Save & Connect</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Script Logic -->
     <script>
         // Initialize Lucide icons
@@ -389,42 +353,13 @@
         // Default today's date
         document.getElementById('visit_date').valueAsDate = new Date();
 
-        // Supabase client instance
-        let dbClient = null;
+        // Supabase Pre-configured Credentials
+        const SUPABASE_URL = 'https://amqlgdiiosmhntstuajl.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_BLs1lpBBBOsXPSyqfRJHhQ_tY0azVsR';
+
+        // Initialize Supabase client instance directly
+        const dbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         let currentCalculatedRevenue = 0;
-
-        // Load config on startup
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedUrl = localStorage.getItem('supabase_url');
-            const savedKey = localStorage.getItem('supabase_key');
-            if (savedUrl && savedKey) {
-                dbClient = supabase.createClient(savedUrl, savedKey);
-            }
-        });
-
-        function openSettingsModal() {
-            document.getElementById('supabaseUrlInput').value = localStorage.getItem('supabase_url') || '';
-            document.getElementById('supabaseKeyInput').value = localStorage.getItem('supabase_key') || '';
-            document.getElementById('settingsModal').classList.remove('hidden');
-        }
-
-        function closeSettingsModal() {
-            document.getElementById('settingsModal').classList.add('hidden');
-        }
-
-        function saveSupabaseConfig() {
-            const url = document.getElementById('supabaseUrlInput').value.trim();
-            const key = document.getElementById('supabaseKeyInput').value.trim();
-            if (url && key) {
-                localStorage.setItem('supabase_url', url);
-                localStorage.setItem('supabase_key', key);
-                dbClient = supabase.createClient(url, key);
-                alert('Supabase credentials saved successfully!');
-                closeSettingsModal();
-            } else {
-                alert('Please enter both URL and Anon Key.');
-            }
-        }
 
         function toggleOthersField() {
             const category = document.getElementById('visited_category').value;
@@ -588,20 +523,12 @@
             submitBtn.textContent = 'Submitting...';
 
             try {
-                if (dbClient) {
-                    const { error } = await dbClient.from('daily_marketing_reports').insert([payload]);
-                    if (error) throw error;
-                    alert('Report successfully submitted and saved to Supabase!');
-                    document.getElementById('reportForm').reset();
-                    document.getElementById('visit_date').valueAsDate = new Date();
-                    calculateTotalRevenue();
-                } else {
-                    // Fallback to LocalStorage CSV / JSON download if Supabase is not connected
-                    let reports = JSON.parse(localStorage.getItem('local_marketing_reports') || '[]');
-                    reports.push(payload);
-                    localStorage.setItem('local_marketing_reports', JSON.stringify(reports));
-                    alert('Supabase not connected. Report saved locally! Configure Supabase via top-right database icon to sync online.');
-                }
+                const { error } = await dbClient.from('daily_marketing_reports').insert([payload]);
+                if (error) throw error;
+                alert('Report successfully submitted and saved to Supabase!');
+                document.getElementById('reportForm').reset();
+                document.getElementById('visit_date').valueAsDate = new Date();
+                calculateTotalRevenue();
             } catch (err) {
                 console.error(err);
                 alert('Error saving to Supabase: ' + err.message);
@@ -667,7 +594,7 @@
                 ['Document Collected', '₹' + p.document_amount.toLocaleString('en-IN'), '100% amount', '₹' + p.document_amount.toLocaleString('en-IN')],
                 ['Logistics Post', '₹' + p.logistics_amount.toLocaleString('en-IN'), '20% amount', '₹' + (p.logistics_amount * 0.20).toLocaleString('en-IN', {maximumFractionDigits:2})],
                 ['Aadhaar Collected', '₹' + p.aadhaar_amount.toLocaleString('en-IN'), 'Amount - 18% GST', '₹' + (p.aadhaar_amount * 0.82).toLocaleString('en-IN', {maximumFractionDigits:2})],
-                ['KVIC Verification', p.kvic_count || p.kvic_verification, '₹3540 - 18% GST / verif.', '₹' + ((p.kvic_count || p.kvic_verification) * 3540 * 0.82).toLocaleString('en-IN', {maximumFractionDigits:2})]
+                ['KVIC Verification', p.kvic_verification, '₹3540 - 18% GST / verif.', '₹' + (p.kvic_verification * 3540 * 0.82).toLocaleString('en-IN', {maximumFractionDigits:2})]
             ];
 
             doc.autoTable({
