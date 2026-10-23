@@ -1,11 +1,9 @@
 
 "use strict";
 
-/* -------------------------------------------------------
-   SUPABASE CONFIGURATION
-   The publishable key is intended for browser-side use.
-   Never put a service_role or secret key in this file.
-------------------------------------------------------- */
+/* =========================================================
+   1. SUPABASE CONFIGURATION
+========================================================= */
 
 const SUPABASE_URL = "https://amqlgdiiosmhntstuajl.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
@@ -13,14 +11,21 @@ const SUPABASE_PUBLISHABLE_KEY =
 
 const TABLE_NAME = "daily_marketing_reports";
 
-const db = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY
-);
+if (!window.supabase?.createClient) {
+  console.error("Supabase JS library did not load.");
+}
 
-/* -------------------------------------------------------
-   DOM HELPERS
-------------------------------------------------------- */
+const db = window.supabase?.createClient
+  ? window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    )
+  : null;
+
+
+/* =========================================================
+   2. DOM REFERENCES AND HELPERS
+========================================================= */
 
 const form = document.getElementById("marketingForm");
 const submitButton = document.getElementById("submitButton");
@@ -35,11 +40,11 @@ function getValue(id) {
 }
 
 function getNumber(id) {
-  const value = getValue(id);
-  if (value === "") return 0;
+  const raw = getValue(id);
+  if (raw === "") return 0;
 
-  const number = Number(value);
-  return Number.isFinite(number) ? number : 0;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : 0;
 }
 
 function formatINR(value) {
@@ -61,25 +66,16 @@ function clearStatus() {
   statusElement.className = "form-status";
 }
 
-function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#039;"
-  })[char]);
-}
-
 function refreshIcons() {
-  if (window.lucide) {
+  if (window.lucide?.createIcons) {
     window.lucide.createIcons();
   }
 }
 
-/* -------------------------------------------------------
-   DATE PICKERS
-------------------------------------------------------- */
+
+/* =========================================================
+   3. DATE PICKERS
+========================================================= */
 
 function openDatePicker(fieldId) {
   const input = $(fieldId);
@@ -105,14 +101,45 @@ document.querySelectorAll("[data-date-target]").forEach((button) => {
   });
 });
 
-/* -------------------------------------------------------
-   CONDITIONAL FIELDS
-------------------------------------------------------- */
+
+/* =========================================================
+   4. CONDITIONAL FIELDS
+========================================================= */
+
+function clearFieldError(input) {
+  if (!input) return;
+
+  input.removeAttribute("aria-invalid");
+
+  const errorElement = input
+    .closest(".field")
+    ?.querySelector(".field-error");
+
+  if (errorElement) {
+    errorElement.textContent = "";
+  }
+}
+
+function showFieldError(input, message) {
+  if (!input) return;
+
+  input.setAttribute("aria-invalid", "true");
+
+  const errorElement = input
+    .closest(".field")
+    ?.querySelector(".field-error");
+
+  if (errorElement) {
+    errorElement.textContent = message;
+  }
+}
 
 function updateCategoryField() {
   const isOther = getValue("visited_category") === "Others";
   const wrapper = $("categoryOtherWrap");
   const input = $("category_other");
+
+  if (!wrapper || !input) return;
 
   wrapper.classList.toggle("hidden", !isOther);
   input.required = isOther;
@@ -124,60 +151,41 @@ function updateCategoryField() {
 }
 
 function updateFollowupField() {
-  const required = getValue("followup_reqd") === "Yes";
+  const isRequired = getValue("followup_reqd") === "Yes";
   const wrapper = $("followupDateWrap");
   const input = $("followup_date");
 
-  wrapper.classList.toggle("hidden", !required);
-  input.required = required;
+  if (!wrapper || !input) return;
 
-  if (!required) {
+  wrapper.classList.toggle("hidden", !isRequired);
+  input.required = isRequired;
+
+  if (!isRequired) {
     input.value = "";
     clearFieldError(input);
   }
 }
 
-$("visited_category").addEventListener("change", updateCategoryField);
-$("followup_reqd").addEventListener("change", updateFollowupField);
+$("visited_category")?.addEventListener(
+  "change",
+  updateCategoryField
+);
 
-/* -------------------------------------------------------
-   FIELD VALIDATION
-------------------------------------------------------- */
+$("followup_reqd")?.addEventListener(
+  "change",
+  updateFollowupField
+);
 
-function fieldErrorElement(input) {
-  const field = input.closest(".field");
-  return field ? field.querySelector(".field-error") : null;
-}
 
-function showFieldError(input, message) {
-  const error = fieldErrorElement(input);
-  input.setAttribute("aria-invalid", "true");
-
-  if (error) {
-    error.textContent = message;
-  }
-}
-
-function clearFieldError(input) {
-  const error = fieldErrorElement(input);
-  input.removeAttribute("aria-invalid");
-
-  if (error) {
-    error.textContent = "";
-  }
-}
+/* =========================================================
+   5. FIELD VALIDATION
+========================================================= */
 
 function validateSingleField(input) {
   if (!input || input.disabled) return true;
 
-  if (input.id === "category_other" &&
-      getValue("visited_category") !== "Others") {
-    clearFieldError(input);
-    return true;
-  }
-
-  if (input.id === "followup_date" &&
-      getValue("followup_reqd") !== "Yes") {
+  // Ignore fields that are currently conditional and hidden.
+  if (input.closest(".hidden")) {
     clearFieldError(input);
     return true;
   }
@@ -190,9 +198,9 @@ function validateSingleField(input) {
   }
 
   if (!error && input.id === "executive_name" && value) {
-    // Unicode letters, spaces, apostrophes, periods and hyphens.
     if (!/^[\p{L}\p{M} .'-]+$/u.test(value)) {
-      error = "Use letters, spaces, apostrophes, periods or hyphens only.";
+      error =
+        "Use letters, spaces, apostrophes, periods or hyphens only.";
     }
   }
 
@@ -204,7 +212,8 @@ function validateSingleField(input) {
 
   if (!error && input.id === "phone_no" && value) {
     if (!/^[6-9]\d{9}$/.test(value)) {
-      error = "Enter a valid 10-digit Indian mobile number starting with 6–9.";
+      error =
+        "Enter a valid 10-digit Indian mobile number starting with 6–9.";
     }
   }
 
@@ -220,24 +229,20 @@ function validateSingleField(input) {
     }
   }
 
-  if (!error && input.id === "visit_date" && value) {
-    const visitDate = new Date(`${value}T00:00:00`);
-    if (Number.isNaN(visitDate.getTime())) {
-      error = "Enter a valid visit date.";
+  if (!error && input.type === "date" && value) {
+    const parsed = new Date(`${value}T00:00:00`);
+
+    if (Number.isNaN(parsed.getTime())) {
+      error = "Enter a valid date.";
     }
   }
 
   if (!error && input.id === "followup_date" && value) {
-    const visitValue = getValue("visit_date");
+    const visitDate = getValue("visit_date");
 
-    if (visitValue && value < visitValue) {
+    if (visitDate && value < visitDate) {
       error = "Follow-up date cannot be before the visit date.";
     }
-  }
-
-  if (!error && input.id === "followup_date" &&
-      getValue("followup_reqd") === "Yes" && !value) {
-    error = "Select a follow-up date.";
   }
 
   if (error) {
@@ -253,35 +258,40 @@ function validateForm() {
   updateCategoryField();
   updateFollowupField();
 
-  let isValid = true;
+  let valid = true;
   let firstInvalid = null;
 
   form.querySelectorAll("input, select, textarea").forEach((input) => {
-    if (input.type === "button" || input.type === "submit") return;
     if (input.closest(".hidden")) return;
 
     if (!validateSingleField(input)) {
-      isValid = false;
-      firstInvalid ??= input;
+      valid = false;
+      if (!firstInvalid) firstInvalid = input;
     }
   });
 
   if (firstInvalid) {
     firstInvalid.focus();
-    firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+    firstInvalid.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
   }
 
-  return isValid;
+  return valid;
 }
 
 form.querySelectorAll("input, select, textarea").forEach((input) => {
-  input.addEventListener("blur", () => validateSingleField(input));
+  input.addEventListener("blur", () => {
+    validateSingleField(input);
+  });
 
   input.addEventListener("input", () => {
     if (input.hasAttribute("aria-invalid")) {
       validateSingleField(input);
     }
-    if (input.type === "number" || input.id === "visit_date") {
+
+    if (input.type === "number") {
       updateRevenueDisplay();
     }
   });
@@ -292,33 +302,57 @@ form.querySelectorAll("input, select, textarea").forEach((input) => {
   });
 });
 
-/* -------------------------------------------------------
-   REVENUE CALCULATIONS
-------------------------------------------------------- */
 
-function calculateRevenue() {
-  const accountsCount =
-    getNumber("posb_count") +
-    getNumber("td_count") +
-    getNumber("ssa_count") +
-    getNumber("rd_count");
+/* =========================================================
+   6. REVENUE CALCULATIONS
+   Configured estimates retained from the original report.
+========================================================= */
+
+function calculateRevenueFrom(source) {
+  const n = (key) => {
+    const value = Number(source[key] ?? 0);
+    return Number.isFinite(value) ? value : 0;
+  };
+
+  const accountCount =
+    n("posb_count") +
+    n("td_count") +
+    n("ssa_count") +
+    n("rd_count");
 
   const revenue = {
-    accounts: accountsCount * 219,
-    pli: getNumber("pli_amount") * 0.04,
-    rpli: getNumber("rpli_amount") * 0.12,
-    parcel: getNumber("parcel_amount"),
-    documents: getNumber("document_amount"),
-    logistics: getNumber("logistics_amount") * 0.20,
-    aadhaar: getNumber("aadhaar_amount") * 0.82,
-    kvic: getNumber("kvic_verification") * 3540 * 0.82
+    accounts: accountCount * 219,
+    pli: n("pli_amount") * 0.04,
+    rpli: n("rpli_amount") * 0.12,
+    parcel: n("parcel_amount"),
+    documents: n("document_amount"),
+    logistics: n("logistics_amount") * 0.20,
+    aadhaar: n("aadhaar_amount") * 0.82,
+    kvic: n("kvic_verification") * 3540 * 0.82
   };
 
   revenue.total = Object.values(revenue).reduce(
-    (sum, value) => sum + value, 0
+    (sum, amount) => sum + amount,
+    0
   );
 
   return revenue;
+}
+
+function calculateRevenue() {
+  return calculateRevenueFrom({
+    posb_count: getNumber("posb_count"),
+    td_count: getNumber("td_count"),
+    ssa_count: getNumber("ssa_count"),
+    rd_count: getNumber("rd_count"),
+    pli_amount: getNumber("pli_amount"),
+    rpli_amount: getNumber("rpli_amount"),
+    parcel_amount: getNumber("parcel_amount"),
+    document_amount: getNumber("document_amount"),
+    logistics_amount: getNumber("logistics_amount"),
+    aadhaar_amount: getNumber("aadhaar_amount"),
+    kvic_verification: getNumber("kvic_verification")
+  });
 }
 
 function updateRevenueDisplay() {
@@ -335,32 +369,44 @@ function updateRevenueDisplay() {
     ["KVIC revenue estimate (82%)", revenue.kvic]
   ];
 
-  $("revenueBreakdown").innerHTML = rows.map(([label, amount]) => `
-    <div class="revenue-line">
-      <span>${escapeHtml(label)}</span>
-      <strong>${formatINR(amount)}</strong>
-    </div>
-  `).join("");
+  const breakdown = $("revenueBreakdown");
 
-  $("totalRevenueDisplay").textContent = formatINR(revenue.total);
+  if (breakdown) {
+    breakdown.innerHTML = rows.map(([label, amount]) => {
+      const row = document.createElement("div");
+      row.className = "revenue-line";
+
+      const labelElement = document.createElement("span");
+      labelElement.textContent = label;
+
+      const amountElement = document.createElement("strong");
+      amountElement.textContent = formatINR(amount);
+
+      row.append(labelElement, amountElement);
+      return row.outerHTML;
+    }).join("");
+  }
+
+  if ($("totalRevenueDisplay")) {
+    $("totalRevenueDisplay").textContent = formatINR(revenue.total);
+  }
 
   return revenue;
 }
 
-/* -------------------------------------------------------
-   FORM DATA
-------------------------------------------------------- */
+
+/* =========================================================
+   7. BUILD DATABASE PAYLOAD
+========================================================= */
 
 function buildPayload() {
-  const revenue = calculateRevenue();
-
-  // Store "Others: <specified category>" in the existing
-  // visited_category field, avoiding a separate DB column.
   let visitedCategory = getValue("visited_category");
 
   if (visitedCategory === "Others") {
-    const specified = getValue("category_other");
-    visitedCategory = specified ? `Others: ${specified}` : "Others";
+    const specifiedCategory = getValue("category_other");
+    visitedCategory = specifiedCategory
+      ? `Others: ${specifiedCategory}`
+      : "Others";
   }
 
   const payload = {
@@ -393,28 +439,47 @@ function buildPayload() {
     primary_vertical: getValue("primary_vertical") || null,
     business_potential_description:
       getValue("business_potential_description") || null,
+
     followup_reqd: getValue("followup_reqd") || "No",
     followup_date:
       getValue("followup_reqd") === "Yes"
         ? getValue("followup_date")
-        : null,
-
-    total_revenue: Number(revenue.total.toFixed(2))
+        : null
   };
+
+  // Retain the configured revenue estimate in the database.
+  payload.total_revenue = Number(
+    calculateRevenueFrom(payload).total.toFixed(2)
+  );
 
   return payload;
 }
 
-/* -------------------------------------------------------
-   SUPABASE SUBMISSION
-------------------------------------------------------- */
+
+/* =========================================================
+   8. SUPABASE SUBMISSION
+   IMPORTANT:
+   Do not chain .select() to .insert().
+   This prevents a SELECT permission requirement.
+========================================================= */
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   clearStatus();
 
   if (!validateForm()) {
-    setStatus("Please correct the highlighted fields before submitting.", "error");
+    setStatus(
+      "Please correct the highlighted fields before submitting.",
+      "error"
+    );
+    return;
+  }
+
+  if (!db) {
+    setStatus(
+      "Supabase did not load. Refresh the page and try again.",
+      "error"
+    );
     return;
   }
 
@@ -425,40 +490,60 @@ form.addEventListener("submit", async (event) => {
   try {
     const payload = buildPayload();
 
-    const { data, error } = await db
+    // Insert only. Do not request returned rows.
+    const { error } = await db
       .from(TABLE_NAME)
-      .insert([payload])
-      .select();
+      .insert([payload]);
 
     if (error) {
-      console.error("Supabase insert error:", error);
+      console.error("Supabase submission error:", {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+
       throw error;
     }
 
-    setStatus("Report submitted successfully to Supabase.", "success");
+    // Save the local copy for PDF export.
+    window.lastSubmittedReport = { ...payload };
 
-    // Offer a PDF of the submitted report.
-    if (data && data.length > 0) {
-      window.lastSubmittedReport = { ...payload, ...data[0] };
-    } else {
-      window.lastSubmittedReport = payload;
-    }
+    setStatus(
+      "Report submitted successfully to Supabase.",
+      "success"
+    );
+
   } catch (error) {
-    console.error("Error saving marketing report:", error);
+    console.error("Could not save report:", error);
 
-    let message = error?.message || "An unknown error occurred.";
+    const message = error?.message || "Unknown database error.";
+    const code = error?.code || "";
 
-    if (/permission denied|row-level security|42501/i.test(message)) {
-      message =
-        "Supabase denied the insert. Check the table INSERT grant and RLS policy.";
+    if (code === "42501" || /permission denied/i.test(message)) {
+      setStatus(
+        "Supabase denied the insert. Verify the anon INSERT grant and RLS INSERT policy in Supabase.",
+        "error"
+      );
+    } else if (/row-level security/i.test(message)) {
+      setStatus(
+        "The report was blocked by Row Level Security. Check the table's INSERT policy.",
+        "error"
+      );
     } else if (/column .* does not exist|schema cache/i.test(message)) {
-      message =
-        "The database table columns do not match this form's field names. Check the table schema.";
-    } else if (/network|fetch/i.test(message)) {
-      message = "Network error. Check your internet connection and try again.";
+      setStatus(
+        "Database columns do not match the form. Check the table schema, including total_revenue.",
+        "error"
+      );
+    } else if (/network|fetch|failed to fetch/i.test(message)) {
+      setStatus(
+        "Network request failed. Check your connection and Supabase project status.",
+        "error"
+      );
+    } else {
+      setStatus(`Could not save the report: ${message}`, "error");
     }
 
-    setStatus(`Could not save the report: ${message}`, "error");
   } finally {
     submitButton.disabled = false;
     submitButton.innerHTML = originalButtonContent;
@@ -466,28 +551,19 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-/* -------------------------------------------------------
-   PDF EXPORT
-------------------------------------------------------- */
 
-function addPdfSectionTitle(doc, title, y) {
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(127, 17, 24);
-  doc.text(title, 14, y);
-  return y + 4;
-}
+/* =========================================================
+   9. PDF EXPORT
+========================================================= */
 
 function pdfRowsFromPayload(p) {
-  const category = p.visited_category || "";
-
   return [
     ["Executive Name", p.executive_name],
     ["Designation", p.designation],
     ["Reporting Post Office", p.post_office],
-    ["Nearest BO", p.nearest_bo || "—"],
+    ["Nearest Branch Post Office", p.nearest_bo || "—"],
     ["Visit Date", p.visit_date],
-    ["Category Visited", category],
+    ["Category Visited", p.visited_category],
     ["BPM Accompanied", p.bpm_accompanied || "No"],
     ["Institution / Customer", p.institution_name],
     ["Mobile Number", p.phone_no],
@@ -498,30 +574,53 @@ function pdfRowsFromPayload(p) {
     ["RD Accounts", p.rd_count],
     ["PLI Premium (₹)", p.pli_amount],
     ["RPLI Premium (₹)", p.rpli_amount],
-    ["Parcel Amount (₹)", p.parcel_amount],
+    ["Parcel Booking Amount (₹)", p.parcel_amount],
     ["Document / Speed Post Amount (₹)", p.document_amount],
     ["Logistics Amount (₹)", p.logistics_amount],
-    ["Aadhaar Amount (₹)", p.aadhaar_amount],
+    ["Aadhaar Service Amount (₹)", p.aadhaar_amount],
     ["KVIC Verifications", p.kvic_verification],
     ["Expected Business (₹)", p.expected_business],
-    ["Primary Vertical", p.primary_vertical || "—"],
+    ["Primary Business Vertical", p.primary_vertical || "—"],
     ["Business Potential", p.business_potential_description || "—"],
     ["Follow-up Required", p.followup_reqd || "No"],
     ["Follow-up Date", p.followup_date || "—"]
   ];
 }
 
+function addPdfSectionTitle(doc, title, y) {
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(127, 17, 24);
+  doc.text(title, 14, y);
+  return y + 4;
+}
+
 function exportPdf() {
-  if (!window.jspdf || !window.jspdf.jsPDF) {
-    setStatus("PDF library could not be loaded. Check your internet connection.", "error");
+  const jsPDF = window.jspdf?.jsPDF;
+
+  if (typeof jsPDF !== "function") {
+    console.error("jsPDF is unavailable. Check the script URLs in index.html.");
+    setStatus(
+      "PDF library could not be loaded. Check the jsPDF CDN script in index.html.",
+      "error"
+    );
     return;
   }
 
-  // Export the last submitted report if available; otherwise export current form.
-  const p = window.lastSubmittedReport || buildPayload();
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  if (typeof jsPDF.API?.autoTable !== "function") {
+    console.error("AutoTable is unavailable. Check its script URL in index.html.");
+    setStatus(
+      "PDF table library could not be loaded. Check the AutoTable script in index.html.",
+      "error"
+    );
+    return;
+  }
 
+  // Export the last successfully submitted report, or current form data.
+  const p = window.lastSubmittedReport || buildPayload();
+  const revenue = calculateRevenueFrom(p);
+
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
   const red = [215, 25, 32];
   const darkRed = [127, 17, 24];
 
@@ -540,14 +639,15 @@ function exportPdf() {
   doc.setFontSize(9);
   doc.text("Dhemaji Sub Division", 14, 26);
 
-  doc.setTextColor(50, 35, 36);
   let y = 40;
+  const rows = pdfRowsFromPayload(p);
 
   y = addPdfSectionTitle(doc, "Executive & Visit Details", y);
+
   doc.autoTable({
     startY: y,
     head: [["Field", "Details"]],
-    body: pdfRowsFromPayload(p).slice(0, 10),
+    body: rows.slice(0, 10),
     theme: "grid",
     styles: { fontSize: 8, cellPadding: 2.5, overflow: "linebreak" },
     headStyles: { fillColor: red, textColor: 255 },
@@ -556,13 +656,13 @@ function exportPdf() {
   });
 
   y = doc.lastAutoTable.finalY + 8;
+
   y = addPdfSectionTitle(doc, "Business Procurement", y);
 
-  const businessRows = pdfRowsFromPayload(p).slice(10, 21);
   doc.autoTable({
     startY: y,
     head: [["Business Metric", "Value"]],
-    body: businessRows,
+    body: rows.slice(10, 21),
     theme: "grid",
     styles: { fontSize: 8, cellPadding: 2.5, overflow: "linebreak" },
     headStyles: { fillColor: red, textColor: 255 },
@@ -572,14 +672,13 @@ function exportPdf() {
 
   y = doc.lastAutoTable.finalY + 8;
 
-  if (y > 240) {
+  if (y > 235) {
     doc.addPage();
     y = 18;
   }
 
-  y = addPdfSectionTitle(doc, "Revenue Estimate", y);
+  y = addPdfSectionTitle(doc, "Estimated Revenue Breakdown", y);
 
-  const revenue = calculateRevenue();
   const revenueRows = [
     ["Savings accounts", revenue.accounts],
     ["PLI (4%)", revenue.pli],
@@ -591,50 +690,21 @@ function exportPdf() {
     ["KVIC (82%)", revenue.kvic]
   ].map(([label, amount]) => [label, formatINR(amount)]);
 
-  // If exporting a previously submitted report, calculate its revenue
-  // from the saved values instead of the current form.
-  const savedRevenue = {
-    accounts: (
-      Number(p.posb_count || 0) +
-      Number(p.td_count || 0) +
-      Number(p.ssa_count || 0) +
-      Number(p.rd_count || 0)
-    ) * 219,
-    pli: Number(p.pli_amount || 0) * 0.04,
-    rpli: Number(p.rpli_amount || 0) * 0.12,
-    parcel: Number(p.parcel_amount || 0),
-    documents: Number(p.document_amount || 0),
-    logistics: Number(p.logistics_amount || 0) * 0.20,
-    aadhaar: Number(p.aadhaar_amount || 0) * 0.82,
-    kvic: Number(p.kvic_verification || 0) * 3540 * 0.82
-  };
-
-  const actualRevenueRows = [
-    ["Savings accounts", savedRevenue.accounts],
-    ["PLI (4%)", savedRevenue.pli],
-    ["RPLI (12%)", savedRevenue.rpli],
-    ["Parcel bookings", savedRevenue.parcel],
-    ["Document / Speed Post", savedRevenue.documents],
-    ["Logistics (20%)", savedRevenue.logistics],
-    ["Aadhaar (82%)", savedRevenue.aadhaar],
-    ["KVIC (82%)", savedRevenue.kvic]
-  ].map(([label, amount]) => [label, formatINR(amount)]);
-
-  const savedTotal = Object.values(savedRevenue).reduce((a, b) => a + b, 0);
+  revenueRows.push(["TOTAL ESTIMATED REVENUE", formatINR(revenue.total)]);
 
   doc.autoTable({
     startY: y,
     head: [["Revenue Category", "Estimated Revenue"]],
-    body: [
-      ...actualRevenueRows,
-      ["TOTAL ESTIMATED REVENUE", formatINR(savedTotal)]
-    ],
+    body: revenueRows,
     theme: "grid",
     styles: { fontSize: 8, cellPadding: 2.5 },
     headStyles: { fillColor: darkRed, textColor: 255 },
     columnStyles: { 1: { halign: "right" } },
-    didParseCell: (data) => {
-      if (data.row.index === actualRevenueRows.length && data.section === "body") {
+    didParseCell(data) {
+      if (
+        data.section === "body" &&
+        data.row.index === revenueRows.length - 1
+      ) {
         data.cell.styles.fontStyle = "bold";
         data.cell.styles.textColor = darkRed;
       }
@@ -644,7 +714,7 @@ function exportPdf() {
 
   y = doc.lastAutoTable.finalY + 8;
 
-  if (y > 250) {
+  if (y > 240) {
     doc.addPage();
     y = 18;
   }
@@ -654,7 +724,7 @@ function exportPdf() {
   doc.autoTable({
     startY: y,
     head: [["Field", "Details"]],
-    body: pdfRowsFromPayload(p).slice(21),
+    body: rows.slice(21),
     theme: "grid",
     styles: { fontSize: 8, cellPadding: 2.5, overflow: "linebreak" },
     headStyles: { fillColor: red, textColor: 255 },
@@ -666,36 +736,43 @@ function exportPdf() {
 
   for (let page = 1; page <= pageCount; page++) {
     doc.setPage(page);
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(120, 100, 101);
+
     doc.text(
-      `India Post · Dhemaji Sub Division | Page ${page} of ${pageCount}`,
+      `India Post - Dhemaji Sub Division | Page ${page} of ${pageCount}`,
       14,
       290
     );
   }
 
-  const safeDate = (p.visit_date || new Date().toISOString().slice(0, 10))
+  const date = (p.visit_date || new Date().toISOString().slice(0, 10))
     .replace(/[^0-9-]/g, "");
-  doc.save(`Dhemaji_Marketing_Report_${safeDate}.pdf`);
+
+  doc.save(`Dhemaji_Marketing_Report_${date}.pdf`);
 }
 
-pdfButton.addEventListener("click", () => {
+pdfButton?.addEventListener("click", () => {
   if (!validateForm()) {
-    setStatus("Please correct the highlighted fields before exporting the PDF.", "error");
+    setStatus(
+      "Please correct the highlighted fields before exporting the PDF.",
+      "error"
+    );
     return;
   }
 
   exportPdf();
 });
 
-/* -------------------------------------------------------
-   RESET
-------------------------------------------------------- */
 
-resetButton.addEventListener("click", () => {
+/* =========================================================
+   10. RESET FORM
+========================================================= */
+
+resetButton?.addEventListener("click", () => {
   const confirmed = window.confirm(
-    "Clear all fields in this report? Unsaved information will be lost."
+    "Clear all fields? Unsaved information will be lost."
   );
 
   if (!confirmed) return;
@@ -703,7 +780,6 @@ resetButton.addEventListener("click", () => {
   form.reset();
   window.lastSubmittedReport = null;
 
-  // Restore default values for numeric inputs.
   form.querySelectorAll('input[type="number"]').forEach((input) => {
     input.value = "0";
   });
@@ -723,34 +799,48 @@ resetButton.addEventListener("click", () => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
-/* -------------------------------------------------------
-   INITIALISE
-------------------------------------------------------- */
+
+/* =========================================================
+   11. INITIALISATION
+========================================================= */
 
 (function initialise() {
-  // Default visit date to today's local date.
+  const visitDateInput = $("visit_date");
+  const followupDateInput = $("followup_date");
+
+  // Use the browser's local date for the default visit date.
   const now = new Date();
-  const localToday = [
+  const today = [
     now.getFullYear(),
     String(now.getMonth() + 1).padStart(2, "0"),
     String(now.getDate()).padStart(2, "0")
   ].join("-");
 
-  if (!$("visit_date").value) {
-    $("visit_date").value = localToday;
+  if (visitDateInput && !visitDateInput.value) {
+    visitDateInput.value = today;
   }
 
-  $("followup_date").min = $("visit_date").value;
+  if (followupDateInput && visitDateInput) {
+    followupDateInput.min = visitDateInput.value;
+  }
 
-  $("visit_date").addEventListener("change", () => {
-    $("followup_date").min = $("visit_date").value;
+  visitDateInput?.addEventListener("change", () => {
+    if (!followupDateInput) return;
 
-    if ($("followup_date").value &&
-        $("followup_date").value < $("visit_date").value) {
-      $("followup_date").value = "";
+    followupDateInput.min = visitDateInput.value;
+
+    if (
+      followupDateInput.value &&
+      followupDateInput.value < visitDateInput.value
+    ) {
+      followupDateInput.value = "";
+      clearFieldError(followupDateInput);
+
       if (getValue("followup_reqd") === "Yes") {
-        showFieldError($("followup_date"),
-          "Follow-up date cannot be before the visit date.");
+        showFieldError(
+          followupDateInput,
+          "Follow-up date cannot be before the visit date."
+        );
       }
     }
   });
@@ -759,4 +849,12 @@ resetButton.addEventListener("click", () => {
   updateFollowupField();
   updateRevenueDisplay();
   refreshIcons();
+
+  console.log("Marketing report application initialised.");
+  console.log("Supabase client available:", Boolean(db));
+  console.log("jsPDF available:", typeof window.jspdf?.jsPDF === "function");
+  console.log(
+    "AutoTable available:",
+    typeof window.jspdf?.jsPDF?.API?.autoTable === "function"
+  );
 })();
