@@ -1,4 +1,3 @@
-
 "use strict";
 
 /* =========================================================
@@ -564,7 +563,7 @@ function pdfRowsFromPayload(p) {
     ["Nearest Branch Post Office", p.nearest_bo || "—"],
     ["Visit Date", p.visit_date],
     ["Category Visited", p.visited_category],
-    ["BPM Accompanied", p.bpm_accompanied || "No"],
+    ["BPM / ABPM Accompanied", p.bpm_accompanied || "No"],
     ["Institution / Customer", p.institution_name],
     ["Mobile Number", p.phone_no],
     ["Address", p.address || "—"],
@@ -597,6 +596,11 @@ function addPdfSectionTitle(doc, title, y) {
 
 function exportPdf() {
   const jsPDF = window.jspdf?.jsPDF;
+  
+  // Fix for AutoTable binding when loading jsPDF via CDN
+  if (jsPDF) {
+    window.jsPDF = jsPDF;
+  }
 
   if (typeof jsPDF !== "function") {
     console.error("jsPDF is unavailable. Check the script URLs in index.html.");
@@ -607,7 +611,7 @@ function exportPdf() {
     return;
   }
 
-  if (typeof jsPDF.API?.autoTable !== "function") {
+  if (typeof window.jspdf?.jsPDF?.API?.autoTable !== "function") {
     console.error("AutoTable is unavailable. Check its script URL in index.html.");
     setStatus(
       "PDF table library could not be loaded. Check the AutoTable script in index.html.",
