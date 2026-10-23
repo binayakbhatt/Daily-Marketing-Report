@@ -46,14 +46,13 @@ function getNumber(id) {
   return Number.isFinite(value) ? value : 0;
 }
 
+// 🟢 FIX: Clean "Rs." format (No superscript artifacts)
 function formatINR(value) {
-  // Format purely as a number with Indian comma placement
   const formattedNumber = new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(Number(value) || 0);
   
-  // Return with simple "Rs." text
   return `Rs. ${formattedNumber}`;
 }
 
@@ -306,7 +305,6 @@ form.querySelectorAll("input, select, textarea").forEach((input) => {
 
 /* =========================================================
    6. REVENUE CALCULATIONS
-   Configured estimates retained from the original report.
 ========================================================= */
 
 function calculateRevenueFrom(source) {
@@ -414,7 +412,8 @@ function buildPayload() {
     executive_name: getValue("executive_name"),
     designation: getValue("designation"),
     post_office: getValue("post_office"),
-    nearest_bo: getValue("nearest_bo") || null,
+    // 🟢 FIX: Default nearest_bo to "—" instead of null to prevent DB errors
+    nearest_bo: getValue("nearest_bo") || "—",
     visit_date: getValue("visit_date"),
     visited_category: visitedCategory,
     bpm_accompanied: getValue("bpm_accompanied") || "No",
@@ -448,7 +447,6 @@ function buildPayload() {
         : null
   };
 
-  // Retain the configured revenue estimate in the database.
   payload.total_revenue = Number(
     calculateRevenueFrom(payload).total.toFixed(2)
   );
@@ -459,9 +457,6 @@ function buildPayload() {
 
 /* =========================================================
    8. SUPABASE SUBMISSION
-   IMPORTANT:
-   Do not chain .select() to .insert().
-   This prevents a SELECT permission requirement.
 ========================================================= */
 
 form.addEventListener("submit", async (event) => {
@@ -478,7 +473,7 @@ form.addEventListener("submit", async (event) => {
 
   if (!db) {
     setStatus(
-      "Database did not load. Refresh the page and try again.",
+      "Supabase did not load. Refresh the page and try again.",
       "error"
     );
     return;
@@ -491,27 +486,19 @@ form.addEventListener("submit", async (event) => {
   try {
     const payload = buildPayload();
 
-    // Insert only. Do not request returned rows.
     const { error } = await db
       .from(TABLE_NAME)
       .insert([payload]);
 
     if (error) {
-      console.error("database submission error:", {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      });
-
       throw error;
     }
 
-    // Save the local copy for PDF export.
     window.lastSubmittedReport = { ...payload };
 
+    // 🟢 FIX: Updated Success Message
     setStatus(
-      "Report submitted successfully.",
+      "Marketing report submitted successfully!",
       "success"
     );
 
@@ -523,22 +510,7 @@ form.addEventListener("submit", async (event) => {
 
     if (code === "42501" || /permission denied/i.test(message)) {
       setStatus(
-        "database denied the insert.",
-        "error"
-      );
-    } else if (/row-level security/i.test(message)) {
-      setStatus(
-        "The report was blocked by Row Level Security. Check the table's INSERT policy.",
-        "error"
-      );
-    } else if (/column .* does not exist|schema cache/i.test(message)) {
-      setStatus(
-        "Database columns do not match the form. Check the table schema, including total_revenue.",
-        "error"
-      );
-    } else if (/network|fetch|failed to fetch/i.test(message)) {
-      setStatus(
-        "Network request failed. Check your connection and Database project status.",
+        "Supabase denied the insert. Verify the anon INSERT grant and RLS INSERT policy in Supabase.",
         "error"
       );
     } else {
@@ -557,6 +529,7 @@ form.addEventListener("submit", async (event) => {
    9. PDF EXPORT
 ========================================================= */
 
+// 🟢 FIX: Removed all (₹) symbols and replaced with (Rs.)
 function pdfRowsFromPayload(p) {
   return [
     ["Executive Name", p.executive_name],
@@ -599,7 +572,7 @@ function addPdfSectionTitle(doc, title, y) {
 function exportPdf() {
   const jsPDF = window.jspdf?.jsPDF;
   
-  // Fix for AutoTable binding when loading jsPDF via CDN
+  // 🟢 FIX: Explicit binding for jsDelivr / unpkg CDNs
   if (jsPDF) {
     window.jsPDF = jsPDF;
   }
@@ -608,15 +581,6 @@ function exportPdf() {
     console.error("jsPDF is unavailable. Check the script URLs in index.html.");
     setStatus(
       "PDF library could not be loaded. Check the jsPDF CDN script in index.html.",
-      "error"
-    );
-    return;
-  }
-
-  if (typeof window.jspdf?.jsPDF?.API?.autoTable !== "function") {
-    console.error("AutoTable is unavailable. Check its script URL in index.html.");
-    setStatus(
-      "PDF table library could not be loaded. Check the AutoTable script in index.html.",
       "error"
     );
     return;
@@ -814,7 +778,6 @@ resetButton?.addEventListener("click", () => {
   const visitDateInput = $("visit_date");
   const followupDateInput = $("followup_date");
 
-  // Use the browser's local date for the default visit date.
   const now = new Date();
   const today = [
     now.getFullYear(),
@@ -855,12 +818,4 @@ resetButton?.addEventListener("click", () => {
   updateFollowupField();
   updateRevenueDisplay();
   refreshIcons();
-
-  console.log("Marketing report application initialised.");
-  console.log("Database client available:", Boolean(db));
-  console.log("jsPDF available:", typeof window.jspdf?.jsPDF === "function");
-  console.log(
-    "AutoTable available:",
-    typeof window.jspdf?.jsPDF?.API?.autoTable === "function"
-  );
 })();
