@@ -476,7 +476,7 @@ form.addEventListener("submit", async (event) => {
 
   if (!db) {
     setStatus(
-      "Supabase did not load. Refresh the page and try again.",
+      "Database did not load. Refresh the page and try again.",
       "error"
     );
     return;
@@ -495,7 +495,7 @@ form.addEventListener("submit", async (event) => {
       .insert([payload]);
 
     if (error) {
-      console.error("Supabase submission error:", {
+      console.error("database submission error:", {
         code: error.code,
         message: error.message,
         details: error.details,
@@ -509,7 +509,7 @@ form.addEventListener("submit", async (event) => {
     window.lastSubmittedReport = { ...payload };
 
     setStatus(
-      "Report submitted successfully to Supabase.",
+      "Report submitted successfully.",
       "success"
     );
 
@@ -521,7 +521,7 @@ form.addEventListener("submit", async (event) => {
 
     if (code === "42501" || /permission denied/i.test(message)) {
       setStatus(
-        "Supabase denied the insert. Verify the anon INSERT grant and RLS INSERT policy in Supabase.",
+        "database denied the insert.",
         "error"
       );
     } else if (/row-level security/i.test(message)) {
@@ -536,7 +536,7 @@ form.addEventListener("submit", async (event) => {
       );
     } else if (/network|fetch|failed to fetch/i.test(message)) {
       setStatus(
-        "Network request failed. Check your connection and Supabase project status.",
+        "Network request failed. Check your connection and Database project status.",
         "error"
       );
     } else {
@@ -855,7 +855,7 @@ resetButton?.addEventListener("click", () => {
   refreshIcons();
 
   console.log("Marketing report application initialised.");
-  console.log("Supabase client available:", Boolean(db));
+  console.log("Database client available:", Boolean(db));
   console.log("jsPDF available:", typeof window.jspdf?.jsPDF === "function");
   console.log(
     "AutoTable available:",
