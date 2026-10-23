@@ -47,13 +47,14 @@ function getNumber(id) {
 }
 
 function formatINR(value) {
-  const num = Number(value) || 0;
-  const formatted = new Intl.NumberFormat("en-IN", {
+  // Format purely as a number with Indian comma placement
+  const formattedNumber = new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(num);
+  }).format(Number(value) || 0);
   
-  return `Rs. ${formatted}`;
+  // Return with simple "Rs." text
+  return `Rs. ${formattedNumber}`;
 }
 
 function setStatus(message, type = "info") {
@@ -572,14 +573,14 @@ function pdfRowsFromPayload(p) {
     ["TD Accounts", p.td_count],
     ["SSA Accounts", p.ssa_count],
     ["RD Accounts", p.rd_count],
-    ["PLI Premium (₹)", p.pli_amount],
-    ["RPLI Premium (₹)", p.rpli_amount],
-    ["Parcel Booking Amount (₹)", p.parcel_amount],
-    ["Document / Speed Post Amount (₹)", p.document_amount],
-    ["Logistics Amount (₹)", p.logistics_amount],
-    ["Aadhaar Service Amount (₹)", p.aadhaar_amount],
+    ["PLI Premium (Rs.)", p.pli_amount],
+    ["RPLI Premium (Rs.)", p.rpli_amount],
+    ["Parcel Booking Amount (Rs.)", p.parcel_amount],
+    ["Document / Speed Post Amount (Rs.)", p.document_amount],
+    ["Logistics Amount (Rs.)", p.logistics_amount],
+    ["Aadhaar Service Amount (Rs.)", p.aadhaar_amount],
     ["KVIC Verifications", p.kvic_verification],
-    ["Expected Business (₹)", p.expected_business],
+    ["Expected Business (Rs.)", p.expected_business],
     ["Primary Business Vertical", p.primary_vertical || "—"],
     ["Business Potential", p.business_potential_description || "—"],
     ["Follow-up Required", p.followup_reqd || "No"],
