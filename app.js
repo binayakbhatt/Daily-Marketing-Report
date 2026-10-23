@@ -47,12 +47,13 @@ function getNumber(id) {
 }
 
 function formatINR(value) {
-  const formattedNumber = new Intl.NumberFormat("en-IN", {
+  const num = Number(value) || 0;
+  const formatted = new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(Number(value) || 0);
+  }).format(num);
   
-  return `Rs. ${formattedNumber}`;
+  return `Rs. ${formatted}`;
 }
 
 function setStatus(message, type = "info") {
