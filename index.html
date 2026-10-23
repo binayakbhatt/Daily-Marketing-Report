@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Daily Marketing Report - India Post</title>
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#f0fdf4', 500: '#22c55e', 600: '#16a34a', 700: '#15803d' },
+                        postal: { red: '#dc2626', yellow: '#eab308' }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- jsPDF & AutoTable for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1rem;
+        }
+        .glass-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 0.75rem;
+            color: #f8fafc;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+        .glass-input:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+        }
+        .glass-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #cbd5e1;
+            margin-bottom: 0.375rem;
+            display: block;
+        }
+        .error-text {
+            font-size: 0.75rem;
+            color: #f87171;
+            margin-top: 0.25rem;
+            display: none;
+        }
+        .has-error .glass-input {
+            border-color: #f87171;
+        }
+        .has-error .error-text {
+            display: block;
+        }
+    </style>
+</head>
+<body class="pb-32">
+
+    <!-- Ambient Background Glows -->
+    <div class="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="fixed bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-40 glass-card border-x-0 border-t-0 rounded-none px-4 py-3 shadow-lg">
+        <div class="max-w-3xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-gradient-to-tr from-amber-500 to-red-600 rounded-xl shadow-md">
+                    <i data-lucide="mail" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight text-white flex items-center gap-2">
+                        India Post <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">Dhemaji</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Daily Marketing Report</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="openSettingsModal()" class="p-2.5 glass-card rounded-xl hover:bg-slate-800/80 transition text-slate-300 hover:text-white" title="Supabase Settings">
+                    <i data-lucide="database" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-3xl mx-auto px-4 mt-6">
+        <form id="reportForm" onsubmit="handleFormSubmit(event)" novalidate class="space-y-6">
+
+            <!-- Section 1: Executive & Visit Details -->
+            <div class="glass-card p-5 space-y-4 shadow-xl">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                    <i data-lucide="user-check" class="w-4 h-4"></i> Executive & Visit Details
+                </h2>
+
+                <!-- Name -->
+                <div id="field-executive_name" class="space-y-1">
+                    <label class="glass-label">1. Name of the Marketing Executive <span class="text-red-400">*</span></label>
+                    <input type="text" id="executive_name" name="executive_name" class="glass-input" placeholder="Enter full name" required>
+                    <p class="error-text">Please enter the executive name.</p>
+                </div>
+
+                <!-- Designation -->
+                <div id="field-designation" class="space-y-1">
+                    <label class="glass-label">2. Designation <span class="text-red-400">*</span></label>
+                    <select id="designation" name="designation" class="glass-input" required>
+                        <option value="">Select Designation</option>
+                        <option value="GDS">GDS</option>
+                        <option value="ME">ME</option>
+                        <option value="MTS">MTS</option>
+                        <option value="PA">PA</option>
+                        <option value="OS(Mails)">OS(Mails)</option>
+                        <option value="Postman">Postman</option>
+                    </select>
+                    <p class="error-text">Please select a designation.</p>
+                </div>
+
+                <!-- Post Office -->
+                <div id="field-post_office" class="space-y-1">
+                    <label class="glass-label">3. Post Office <span class="text-red-400">*</span></label>
+                    <select id="post_office" name="post_office" class="glass-input" required>
+                        <option value="">Select Post Office</option>
+                        <option value="Dhemaji SO">Dhemaji SO</option>
+                        <option value="Sissirborgaon SO">Sissirborgaon SO</option>
+                        <option value="Simen Mukh SO">Simen Mukh SO</option>
+                        <option value="Jonai SO">Jonai SO</option>
+                        <option value="Machkhowa SO">Machkhowa SO</option>
+                        <option value="Bordoloni SO">Bordoloni SO</option>
+                    </select>
+                    <p class="error-text">Please select a post office.</p>
+                </div>
+
+                <!-- Nearest Branch Office -->
+                <div id="field-nearest_bo" class="space-y-1">
+                    <label class="glass-label">4. Nearest Branch Office <span class="text-red-400">*</span></label>
+                    <input type="text" id="nearest_bo" name="nearest_bo" class="glass-input" placeholder="Enter nearest Branch Office name" required>
+                    <p class="error-text">Please enter the nearest Branch Office.</p>
+                </div>
+
+                <!-- Date -->
+                <div id="field-visit_date" class="space-y-1">
+                    <label class="glass-label">5. Date <span class="text-red-400">*</span></label>
+                    <input type="date" id="visit_date" name="visit_date" class="glass-input" required>
+                    <p class="error-text">Please select a valid date.</p>
+                </div>
+
+                <!-- Visited Category -->
+                <div id="field-visited_category" class="space-y-1">
+                    <label class="glass-label">6. Visited Category <span class="text-red-400">*</span></label>
+                    <select id="visited_category" name="visited_category" class="glass-input" onchange="toggleOthersField()" required>
+                        <option value="">Select Category</option>
+                        <option value="Educational Institutes">Educational Institutes</option>
+                        <option value="Govt institutions">Govt institutions</option>
+                        <option value="Private institutions">Private institutions</option>
+                        <option value="Big business">Big business</option>
+                        <option value="Showroom">Showroom</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Banks & Financial">Banks & Financial</option>
+                        <option value="MSME / Factories">MSME / Factories</option>
+                        <option value="Others">Others</option>
+                    </select>
+                    <p class="error-text">Please select a visited category.</p>
+                </div>
+
+                <!-- Others Specification (Conditional) -->
+                <div id="others_container" class="space-y-1 hidden">
+                    <label class="glass-label">Specify Other Institution Type <span class="text-red-400">*</span></label>
+                    <input type="text" id="other_category_name" name="other_category_name" class="glass-input" placeholder="Enter institution type">
+                    <p class="error-text">Please specify the institution type.</p>
+                </div>
+
+                <!-- BPM/ABPM Accompanied -->
+                <div id="field-bpm_accompanied" class="space-y-1">
+                    <label class="glass-label">7. Whether BPM/ABPM accompanied during the visit? <span class="text-red-400">*</span></label>
+                    <select id="bpm_accompanied" name="bpm_accompanied" class="glass-input" required>
+                        <option value="">Select Option</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                    <p class="error-text">Please select an option.</p>
+                </div>
+
+                <!-- Institution Name & Contact Info -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <div id="field-institution_name" class="space-y-1 md:col-span-2">
+                        <label class="glass-label">Name of Institution Visited <span class="text-red-400">*</span></label>
+                        <input type="text" id="institution_name" name="institution_name" class="glass-input" placeholder="e.g. Dhemaji College" required>
+                        <p class="error-text">Please enter institution name.</p>
+                    </div>
+                    <div id="field-phone_no" class="space-y-1">
+                        <label class="glass-label">Phone No. of Institution <span class="text-red-400">*</span></label>
+                        <input type="tel" id="phone_no" name="phone_no" class="glass-input" placeholder="10-digit mobile number" pattern="[0-9]{10}" maxlength="10" required>
+                        <p class="error-text">Enter a valid 10-digit phone number.</p>
+                    </div>
+                    <div id="field-address" class="space-y-1">
+                        <label class="glass-label">Address of Institution <span class="text-red-400">*</span></label>
+                        <input type="text" id="address" name="address" class="glass-input" placeholder="Location / Town / Village" required>
+                        <p class="error-text">Please enter the address.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Business & Accounts Gathered -->
+            <div class="glass-card p-5 space-y-4 shadow-xl">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                    <i data-lucide="trending-up" class="w-4 h-4"></i> Business & Accounts Gathered
+                </h2>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="glass-label">POSB Accounts</label>
+                        <input type="number" id="posb_count" name="posb_count" min="0" value="0" class="glass-input calc-trigger" oninput="calculateTotalRevenue()">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="glass-label">TD Accounts</label>
+                        <input type="number" id="td_count" name="td_count" min="0" value="0" class="glass-input calc-trigger" oninput="calculateTotalRevenue()">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="glass-label">SSA Accounts</label>
+                        <input type="number" id="ssa_count" name="ssa_count" min="0" value="0" class="glass-input calc-trigger" oninput="calculateTotalRevenue()">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="glass-label">RD Accounts</label>
+                        <input type="number" id="rd_count" name="rd_count" min="0" value="0" class="glass-input calc-trigger" oninput="calculateTotalRevenue()">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <div class="space-y-1">
+                        <label class="glass-label">PLI Premium Collected (₹)</label>
+                        <input type="number" id="pli_amount" name="pli_amount" min="0" step="0.01" value="0" class="glass-input calc-trigger" oninput="calculateTotalRevenue()">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="glass-label">RPLI Premium Collected (₹)</label>
+                        <input type="number" id="rpli_amount" name="rpli_amount" min="0" step="0.01" value="0" class="glass-input calc-trigger" oninput="calculateTotalRevenue()">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="glass-label">Parcel Amount Collected (₹)</label>
+                        <input type="number" id="parcel_amount" name="parcel_amount" min="0" step="0.01" value="0" class="glass-input calc-trigger" oninput="calculateTotalRevenue()">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="glass-label">Document Amount Collected (₹)</label>
+                        <input type="number" id="document_amount" name="document_amount" min="0" step="0.01" value="0" class="glass-input calc-trigger" oninput="calculateTotalRevenue()">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="glass-label">Logistics Post Business (₹)</label>
+                        <input type="number" id="logistics_amount" name="logistics_amount" min="0" step="0.01" value="0" class="glass-input calc-trigger" oninput="calculateTotalRevenue()">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="glass-label">Aadhaar Amount Collected (₹)</label>
+                        <input type="number" id="aadhaar_amount" name="aadhaar_amount" min="0" step="0.01" value="0" class="glass-input calc-trigger" oninput="calculateTotalRevenue()">
+                    </div>
+                    <div class="space-y-1 md:col-span-2">
+                        <label class="glass-label">KVIC Verification (Count)</label>
+                        <input type="number" id="kvic_verification" name="kvic_verification" min="0" value="0" class="glass-input calc-trigger" oninput="calculateTotalRevenue()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Potential & Follow-up -->
+            <div class="glass-card p-5 space-y-4 shadow-xl">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-sky-400 flex items-center gap-2">
+                    <i data-lucide="target" class="w-4 h-4"></i> Potential & Follow-up
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="glass-label">Expected Business from Institution (All Verticals) (₹)</label>
+                        <input type="number" id="expected_business" name="expected_business" min="0" step="0.01" value="0" class="glass-input">
+                    </div>
+                    <div id="field-primary_vertical" class="space-y-1">
+                        <label class="glass-label">Most business is expected from <span class="text-red-400">*</span></label>
+                        <select id="primary_vertical" name="primary_vertical" class="glass-input" required>
+                            <option value="">Select Vertical</option>
+                            <option value="Mails">Mails</option>
+                            <option value="Parcel">Parcel</option>
+                            <option value="IR&GB">IR&GB</option>
+                            <option value="POSB">POSB</option>
+                            <option value="Insurance">Insurance</option>
+                            <option value="Aadhaar">Aadhaar</option>
+                        </select>
+                        <p class="error-text">Please select primary vertical.</p>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="glass-label">Describe Business Potential from Institution</label>
+                    <textarea id="business_potential_description" name="business_potential_description" rows="2" class="glass-input" placeholder="Notes on scope, upcoming campaigns, or bulk opportunities..."></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <div id="field-followup_reqd" class="space-y-1">
+                        <label class="glass-label">Follow up Reqd <span class="text-red-400">*</span></label>
+                        <select id="followup_reqd" name="followup_reqd" class="glass-input" onchange="toggleFollowupDate()" required>
+                            <option value="">Select Option</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                        <p class="error-text">Please select an option.</p>
+                    </div>
+
+                    <div id="followup_date_container" class="space-y-1 hidden">
+                        <label class="glass-label">Follow-up Date <span class="text-red-400">*</span></label>
+                        <input type="date" id="followup_date" name="followup_date" class="glass-input">
+                        <p class="error-text">Please select follow-up date.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sticky Bottom Bar with Total Revenue & Actions -->
+            <div class="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 p-4 shadow-2xl">
+                <div class="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-4">
+                        <div>
+                            <span class="text-xs text-slate-400 block uppercase font-medium tracking-wider">Total Revenue</span>
+                            <span id="displayTotalRevenue" class="text-2xl font-black text-emerald-400">₹0.00</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <button type="button" onclick="downloadPDFReport()" class="flex-1 sm:flex-none px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl border border-slate-700 transition flex items-center justify-center gap-2 text-sm shadow-md">
+                            <i data-lucide="file-text" class="w-4 h-4 text-amber-400"></i> Download PDF
+                        </button>
+                        <button type="submit" id="submitBtn" class="flex-1 sm:flex-none px-6 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm">
+                            <i data-lucide="send" class="w-4 h-4"></i> Submit Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </main>
+
+    <!-- Supabase Configuration Modal -->
+    <div id="settingsModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="glass-card max-w-md w-full p-6 space-y-4 border border-slate-700 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                    <i data-lucide="database" class="w-5 h-5 text-sky-400"></i> Supabase Configuration
+                </h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-300">Enter your Supabase project credentials to enable cloud sync. Credentials are saved locally on this device.</p>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="glass-label">Supabase URL</label>
+                    <input type="text" id="supabaseUrlInput" class="glass-input" placeholder="https://xyz.supabase.co">
+                </div>
+                <div>
+                    <label class="glass-label">Supabase Anon Key</label>
+                    <input type="password" id="supabaseKeyInput" class="glass-input" placeholder="eyJhbGciOi...">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium">Cancel</button>
+                <button type="button" onclick="saveSupabaseConfig()" class="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-semibold shadow-lg">Save & Connect</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Logic -->
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Default today's date
+        document.getElementById('visit_date').valueAsDate = new Date();
+
+        // Supabase client instance
+        let dbClient = null;
+        let currentCalculatedRevenue = 0;
+
+        // Load config on startup
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedUrl = localStorage.getItem('supabase_url');
+            const savedKey = localStorage.getItem('supabase_key');
+            if (savedUrl && savedKey) {
+                dbClient = supabase.createClient(savedUrl, savedKey);
+            }
+        });
+
+        function openSettingsModal() {
+            document.getElementById('supabaseUrlInput').value = localStorage.getItem('supabase_url') || '';
+            document.getElementById('supabaseKeyInput').value = localStorage.getItem('supabase_key') || '';
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        function saveSupabaseConfig() {
+            const url = document.getElementById('supabaseUrlInput').value.trim();
+            const key = document.getElementById('supabaseKeyInput').value.trim();
+            if (url && key) {
+                localStorage.setItem('supabase_url', url);
+                localStorage.setItem('supabase_key', key);
+                dbClient = supabase.createClient(url, key);
+                alert('Supabase credentials saved successfully!');
+                closeSettingsModal();
+            } else {
+                alert('Please enter both URL and Anon Key.');
+            }
+        }
+
+        function toggleOthersField() {
+            const category = document.getElementById('visited_category').value;
+            const container = document.getElementById('others_container');
+            const otherInput = document.getElementById('other_category_name');
+            if (category === 'Others') {
+                container.classList.remove('hidden');
+                otherInput.required = true;
+            } else {
+                container.classList.add('hidden');
+                otherInput.required = false;
+                otherInput.value = '';
+            }
+        }
+
+        function toggleFollowupDate() {
+            const val = document.getElementById('followup_reqd').value;
+            const container = document.getElementById('followup_date_container');
+            const dateInput = document.getElementById('followup_date');
+            if (val === 'Yes') {
+                container.classList.remove('hidden');
+                dateInput.required = true;
+            } else {
+                container.classList.add('hidden');
+                dateInput.required = false;
+                dateInput.value = '';
+            }
+        }
+
+        function calculateTotalRevenue() {
+            const posb = parseFloat(document.getElementById('posb_count').value) || 0;
+            const td = parseFloat(document.getElementById('td_count').value) || 0;
+            const ssa = parseFloat(document.getElementById('ssa_count').value) || 0;
+            const rd = parseFloat(document.getElementById('rd_count').value) || 0;
+            
+            const pli = parseFloat(document.getElementById('pli_amount').value) || 0;
+            const rpli = parseFloat(document.getElementById('rpli_amount').value) || 0;
+            const parcel = parseFloat(document.getElementById('parcel_amount').value) || 0;
+            const documentAmt = parseFloat(document.getElementById('document_amount').value) || 0;
+            const logistics = parseFloat(document.getElementById('logistics_amount').value) || 0;
+            const aadhaar = parseFloat(document.getElementById('aadhaar_amount').value) || 0;
+            const kvicCount = parseFloat(document.getElementById('kvic_verification').value) || 0;
+
+            // Formulas
+            const accountsTotal = (posb + td + ssa + rd) * 219;
+            const rpliRevenue = rpli * 0.12;
+            const pliRevenue = pli * 0.04;
+            const mailParcelRevenue = parcel + documentAmt;
+            const logisticsRevenue = logistics * 0.20;
+            // Aadhaar: Amount minus 18% GST (Amount * 0.82)
+            const aadhaarRevenue = aadhaar * 0.82;
+            // KVIC: 3540 minus 18% GST per verification (3540 * 0.82 = 2902.80)
+            const kvicRevenue = kvicCount * 3540 * 0.82;
+
+            currentCalculatedRevenue = accountsTotal + rpliRevenue + pliRevenue + mailParcelRevenue + logisticsRevenue + aadhaarRevenue + kvicRevenue;
+            
+            document.getElementById('displayTotalRevenue').textContent = '₹' + currentCalculatedRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // Initial calculation trigger
+        calculateTotalRevenue();
+
+        function validateForm() {
+            let isValid = true;
+            const requiredFields = [
+                'executive_name', 'designation', 'post_office', 'nearest_bo',
+                'visit_date', 'visited_category', 'bpm_accompanied',
+                'institution_name', 'phone_no', 'address', 'primary_vertical', 'followup_reqd'
+            ];
+
+            // Clear previous errors
+            document.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
+
+            requiredFields.forEach(fieldId => {
+                const el = document.getElementById(fieldId);
+                const wrapper = document.getElementById('field-' + fieldId);
+                if (!el.value.trim()) {
+                    isValid = false;
+                    if (wrapper) wrapper.classList.add('has-error');
+                }
+            });
+
+            // Conditional Others check
+            const cat = document.getElementById('visited_category').value;
+            if (cat === 'Others') {
+                const otherInput = document.getElementById('other_category_name');
+                if (!otherInput.value.trim()) {
+                    isValid = false;
+                    otherInput.parentElement.classList.add('has-error');
+                }
+            }
+
+            // Conditional Follow-up date check
+            const followup = document.getElementById('followup_reqd').value;
+            if (followup === 'Yes') {
+                const fDate = document.getElementById('followup_date');
+                if (!fDate.value) {
+                    isValid = false;
+                    fDate.parentElement.classList.add('has-error');
+                }
+            }
+
+            // Phone number 10 digit check
+            const phone = document.getElementById('phone_no').value.trim();
+            if (phone && !/^\d{10}$/.test(phone)) {
+                isValid = false;
+                document.getElementById('field-phone_no').classList.add('has-error');
+            }
+
+            if (!isValid) {
+                alert('Please fill in all required fields correctly before submitting.');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            return isValid;
+        }
+
+        function getFormDataPayload() {
+            const cat = document.getElementById('visited_category').value;
+            const finalCategory = cat === 'Others' ? document.getElementById('other_category_name').value.trim() : cat;
+
+            return {
+                executive_name: document.getElementById('executive_name').value.trim(),
+                designation: document.getElementById('designation').value,
+                post_office: document.getElementById('post_office').value,
+                nearest_bo: document.getElementById('nearest_bo').value.trim(),
+                visit_date: document.getElementById('visit_date').value,
+                visited_category: finalCategory,
+                bpm_accompanied: document.getElementById('bpm_accompanied').value,
+                institution_name: document.getElementById('institution_name').value.trim(),
+                phone_no: document.getElementById('phone_no').value.trim(),
+                address: document.getElementById('address').value.trim(),
+                posb_count: parseInt(document.getElementById('posb_count').value) || 0,
+                td_count: parseInt(document.getElementById('td_count').value) || 0,
+                ssa_count: parseInt(document.getElementById('ssa_count').value) || 0,
+                rd_count: parseInt(document.getElementById('rd_count').value) || 0,
+                pli_amount: parseFloat(document.getElementById('pli_amount').value) || 0,
+                rpli_amount: parseFloat(document.getElementById('rpli_amount').value) || 0,
+                parcel_amount: parseFloat(document.getElementById('parcel_amount').value) || 0,
+                document_amount: parseFloat(document.getElementById('document_amount').value) || 0,
+                logistics_amount: parseFloat(document.getElementById('logistics_amount').value) || 0,
+                aadhaar_amount: parseFloat(document.getElementById('aadhaar_amount').value) || 0,
+                kvic_verification: parseInt(document.getElementById('kvic_verification').value) || 0,
+                expected_business: parseFloat(document.getElementById('expected_business').value) || 0,
+                primary_vertical: document.getElementById('primary_vertical').value,
+                business_potential_description: document.getElementById('business_potential_description').value.trim(),
+                followup_reqd: document.getElementById('followup_reqd').value,
+                followup_date: document.getElementById('followup_date').value || null,
+                total_revenue: currentCalculatedRevenue,
+                created_at: new Date().toISOString()
+            };
+        }
+
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            if (!validateForm()) return;
+
+            const payload = getFormDataPayload();
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                if (dbClient) {
+                    const { error } = await dbClient.from('daily_marketing_reports').insert([payload]);
+                    if (error) throw error;
+                    alert('Report successfully submitted and saved to Supabase!');
+                    document.getElementById('reportForm').reset();
+                    document.getElementById('visit_date').valueAsDate = new Date();
+                    calculateTotalRevenue();
+                } else {
+                    // Fallback to LocalStorage CSV / JSON download if Supabase is not connected
+                    let reports = JSON.parse(localStorage.getItem('local_marketing_reports') || '[]');
+                    reports.push(payload);
+                    localStorage.setItem('local_marketing_reports', JSON.stringify(reports));
+                    alert('Supabase not connected. Report saved locally! Configure Supabase via top-right database icon to sync online.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error saving to Supabase: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> Submit Report';
+                lucide.createIcons();
+            }
+        }
+
+        function downloadPDFReport() {
+            if (!validateForm()) return;
+            const p = getFormDataPayload();
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFillColor(15, 23, 42);
+            doc.rect(0, 0, 210, 35, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('INDIA POST - DHEMAJI SUB DIVISION', 14, 15);
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Daily Marketing Visit Report', 14, 24);
+
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Executive & Visit Details', 14, 45);
+
+            const detailsData = [
+                ['Executive Name', p.executive_name, 'Designation', p.designation],
+                ['Post Office', p.post_office, 'Nearest Branch Office', p.nearest_bo],
+                ['Date', p.visit_date, 'Visited Category', p.visited_category],
+                ['Institution Name', p.institution_name, 'BPM/ABPM Accompanied', p.bpm_accompanied],
+                ['Phone No', p.phone_no, 'Address', p.address]
+            ];
+
+            doc.autoTable({
+                startY: 50,
+                body: detailsData,
+                theme: 'grid',
+                styles: { fontSize: 9, cellPadding: 3 },
+                columnStyles: { 0: { fontStyle: 'bold', fillColor: [241, 245, 249] }, 2: { fontStyle: 'bold', fillColor: [241, 245, 249] } }
+            });
+
+            let finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Business Gathered & Total Revenue Breakdown', 14, finalY);
+
+            const businessData = [
+                ['POSB Accounts', p.posb_count, '₹219 / account', '₹' + (p.posb_count * 219).toLocaleString('en-IN')],
+                ['TD Accounts', p.td_count, '₹219 / account', '₹' + (p.td_count * 219).toLocaleString('en-IN')],
+                ['SSA Accounts', p.ssa_count, '₹219 / account', '₹' + (p.ssa_count * 219).toLocaleString('en-IN')],
+                ['RD Accounts', p.rd_count, '₹219 / account', '₹' + (p.rd_count * 219).toLocaleString('en-IN')],
+                ['PLI Premium', '₹' + p.pli_amount.toLocaleString('en-IN'), '4% of premium', '₹' + (p.pli_amount * 0.04).toLocaleString('en-IN', {maximumFractionDigits:2})],
+                ['RPLI Premium', '₹' + p.rpli_amount.toLocaleString('en-IN'), '12% of premium', '₹' + (p.rpli_amount * 0.12).toLocaleString('en-IN', {maximumFractionDigits:2})],
+                ['Parcel Collected', '₹' + p.parcel_amount.toLocaleString('en-IN'), '100% amount', '₹' + p.parcel_amount.toLocaleString('en-IN')],
+                ['Document Collected', '₹' + p.document_amount.toLocaleString('en-IN'), '100% amount', '₹' + p.document_amount.toLocaleString('en-IN')],
+                ['Logistics Post', '₹' + p.logistics_amount.toLocaleString('en-IN'), '20% amount', '₹' + (p.logistics_amount * 0.20).toLocaleString('en-IN', {maximumFractionDigits:2})],
+                ['Aadhaar Collected', '₹' + p.aadhaar_amount.toLocaleString('en-IN'), 'Amount - 18% GST', '₹' + (p.aadhaar_amount * 0.82).toLocaleString('en-IN', {maximumFractionDigits:2})],
+                ['KVIC Verification', p.kvic_count || p.kvic_verification, '₹3540 - 18% GST / verif.', '₹' + ((p.kvic_count || p.kvic_verification) * 3540 * 0.82).toLocaleString('en-IN', {maximumFractionDigits:2})]
+            ];
+
+            doc.autoTable({
+                startY: finalY + 5,
+                head: [['Vertical / Item', 'Collected Value', 'Weightage Formula', 'Generated Revenue']],
+                body: businessData,
+                theme: 'striped',
+                headStyles: { fillColor: [15, 23, 42] },
+                styles: { fontSize: 9, cellPadding: 3 }
+            });
+
+            finalY = doc.lastAutoTable.finalY + 8;
+            doc.setFillColor(240, 253, 244);
+            doc.setDrawColor(34, 197, 94);
+            doc.roundedRect(14, finalY, 182, 14, 2, 2, 'FD');
+            doc.setTextColor(21, 128, 61);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+            doc.text(`TOTAL REVENUE: ₹${p.total_revenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 20, finalY + 9.5);
+
+            finalY += 22;
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(12);
+            doc.text('Potential & Follow-up', 14, finalY);
+
+            const potentialData = [
+                ['Expected Business (All Verticals)', '₹' + p.expected_business.toLocaleString('en-IN')],
+                ['Most Business Expected From', p.primary_vertical],
+                ['Business Potential Description', p.business_potential_description || 'N/A'],
+                ['Follow-up Required', p.followup_reqd + (p.followup_date ? ' (Date: ' + p.followup_date + ')' : '')]
+            ];
+
+            doc.autoTable({
+                startY: finalY + 5,
+                body: potentialData,
+                theme: 'grid',
+                styles: { fontSize: 9, cellPadding: 3 },
+                columnStyles: { 0: { fontStyle: 'bold', fillColor: [241, 245, 249], cellWidth: 70 } }
+            });
+
+            doc.save(`Daily_Marketing_Report_${p.executive_name.replace(/\s+/g, '_')}_${p.visit_date}.pdf`);
+        }
+    </script>
+</body>
+</html>
