@@ -1,1125 +1,359 @@
 
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Daily Marketing Report - India Post</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#7F1118">
+  <meta name="description" content="India Post Dhemaji Sub Division Daily Marketing Report">
+  <title>Daily Marketing Report | India Post Dhemaji</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = {
-  darkMode: 'class',
-  theme: {
-    extend: {
-      colors: {
-        brand: { 50: '#f0fdf4', 500: '#22c55e', 600: '#16a34a', 700: '#15803d' },
-        postal: { red: '#dc2626', yellow: '#eab308' }
-      }
-    }
-  }
-};
-</script>
+  <link rel="stylesheet" href="./styles.css">
 
-<script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-
-<style>
-* { box-sizing: border-box; }
-
-body {
-  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
-  min-height: 100vh;
-  color: #f8fafc;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-}
-
-.glass-card {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1rem;
-}
-
-.glass-input {
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0.75rem;
-  color: #f8fafc;
-  padding: 0.75rem 1rem;
-  width: 100%;
-  min-height: 48px;
-  font: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.glass-input:focus {
-  outline: none;
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
-}
-
-.glass-input::placeholder { color: #94a3b8; }
-
-.glass-label {
-  display: block;
-  margin-bottom: 0.375rem;
-  color: #cbd5e1;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.error-text {
-  display: none;
-  color: #f87171;
-  font-size: 0.75rem;
-  margin-top: 0.25rem;
-}
-
-.has-error .error-text { display: block; }
-
-.has-error .glass-input {
-  border-color: #f87171 !important;
-  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.15);
-}
-
-input[type="date"].glass-input {
-  display: block;
-  min-width: 0;
-  color-scheme: dark;
-  cursor: pointer;
-  -webkit-appearance: auto;
-  appearance: auto;
-  touch-action: manipulation;
-}
-
-input[type="date"].glass-input::-webkit-calendar-picker-indicator {
-  filter: brightness(0) invert(1);
-  opacity: 1;
-  cursor: pointer;
-  width: 22px;
-  height: 22px;
-}
-
-.date-picker-button {
-  min-width: 48px;
-  min-height: 48px;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 0.75rem;
-  background: rgba(51,65,85,0.9);
-  color: #fff;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.date-picker-button:hover { background: #475569; }
-
-.date-picker-button:focus-visible {
-  outline: 2px solid #38bdf8;
-  outline-offset: 2px;
-}
-
-.hidden { display: none !important; }
-
-textarea.glass-input { resize: vertical; }
-
-button:disabled {
-  opacity: 0.65;
-  cursor: wait;
-}
-</style>
+  <!-- UI and PDF libraries -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+  <script src="./app.js" defer></script>
 </head>
 
-<body class="pb-40">
-
-<div class="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
-<div class="fixed bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
-
-<header class="sticky top-0 z-40 glass-card border-x-0 border-t-0 rounded-none px-4 py-3 shadow-lg">
-  <div class="max-w-3xl mx-auto flex items-center">
-    <div class="flex items-center space-x-3">
-      <div class="p-2 bg-gradient-to-tr from-amber-500 to-red-600 rounded-xl shadow-md">
-        <i data-lucide="mail" class="w-6 h-6 text-white"></i>
+<body>
+  <header class="top-header">
+    <div class="header-inner">
+      <div class="brand-mark" aria-hidden="true">
+        <i data-lucide="mail"></i>
       </div>
       <div>
-        <h1 class="font-bold text-lg tracking-tight text-white flex items-center gap-2">
-          India Post
-          <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">Dhemaji</span>
-        </h1>
-        <p class="text-xs text-slate-400">Daily Marketing Report</p>
+        <p class="brand-overline">DEPARTMENT OF POSTS</p>
+        <h1>Daily Marketing Report</h1>
+        <p class="header-subtitle">Dhemaji Sub Division · India Post</p>
       </div>
     </div>
-  </div>
-</header>
+  </header>
 
-<main class="max-w-3xl mx-auto px-4 mt-6">
-<form id="reportForm" class="space-y-6" novalidate>
-
-  <!-- SECTION 1: EXECUTIVE AND VISIT DETAILS -->
-  <section class="glass-card p-5 space-y-4 shadow-xl">
-    <h2 class="text-sm font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-2">
-      <i data-lucide="user-check" class="w-4 h-4"></i>
-      Executive &amp; Visit Details
-    </h2>
-
-    <div id="field-executive_name" class="space-y-1">
-      <label for="executive_name" class="glass-label">1. Name of the Marketing Executive <span class="text-red-400">*</span></label>
-      <input type="text" id="executive_name" name="executive_name" class="glass-input"
-        placeholder="Enter full name" minlength="2" maxlength="100" autocomplete="name" required>
-      <p class="error-text">Enter a valid name using letters, spaces, apostrophes, periods or hyphens.</p>
+  <main class="page-container">
+    <div class="intro-row">
+      <div>
+        <h2>Marketing Activity Entry</h2>
+        <p>Record visits, business procurement and follow-up opportunities.</p>
+      </div>
+      <span class="required-note"><span>*</span> Required fields</span>
     </div>
 
-    <div id="field-designation" class="space-y-1">
-      <label for="designation" class="glass-label">2. Designation <span class="text-red-400">*</span></label>
-      <select id="designation" name="designation" class="glass-input" required>
-        <option value="">Select Designation</option>
-        <option value="GDS">GDS</option>
-        <option value="ME">ME</option>
-        <option value="MTS">MTS</option>
-        <option value="PA">PA</option>
-        <option value="OS(Mails)">OS(Mails)</option>
-        <option value="Postman">Postman</option>
-      </select>
-      <p class="error-text">Please select a designation.</p>
-    </div>
-
-    <div id="field-post_office" class="space-y-1">
-      <label for="post_office" class="glass-label">3. Post Office <span class="text-red-400">*</span></label>
-      <select id="post_office" name="post_office" class="glass-input" required>
-        <option value="">Select Post Office</option>
-        <option value="Dhemaji SO">Dhemaji SO</option>
-        <option value="Sissirborgaon SO">Sissirborgaon SO</option>
-        <option value="Simen Mukh SO">Simen Mukh SO</option>
-        <option value="Jonai SO">Jonai SO</option>
-        <option value="Machkhowa SO">Machkhowa SO</option>
-        <option value="Bordoloni SO">Bordoloni SO</option>
-      </select>
-      <p class="error-text">Please select a post office.</p>
-    </div>
-
-    <div id="field-nearest_bo" class="space-y-1">
-      <label for="nearest_bo" class="glass-label">4. Nearest Branch Office <span class="text-red-400">*</span></label>
-      <input type="text" id="nearest_bo" name="nearest_bo" class="glass-input"
-        placeholder="Enter nearest Branch Office name" minlength="2" maxlength="150" required>
-      <p class="error-text">Please enter a valid Branch Office name.</p>
-    </div>
-
-    <div id="field-visit_date" class="space-y-1">
-      <label for="visit_date" class="glass-label">5. Date <span class="text-red-400">*</span></label>
-      <div class="flex items-center gap-2">
-        <input type="date" id="visit_date" name="visit_date" class="glass-input" required>
-        <button type="button" class="date-picker-button"
-          onclick="openDatePicker('visit_date')" aria-label="Open visit date calendar" title="Open calendar">
-          <i data-lucide="calendar-days" class="w-5 h-5 text-white"></i>
-        </button>
-      </div>
-      <p class="error-text">Please select a valid visit date.</p>
-    </div>
-
-    <div id="field-visited_category" class="space-y-1">
-      <label for="visited_category" class="glass-label">6. Visited Category <span class="text-red-400">*</span></label>
-      <select id="visited_category" name="visited_category" class="glass-input" required>
-        <option value="">Select Category</option>
-        <option value="Educational Institutes">Educational Institutes</option>
-        <option value="Govt institutions">Govt institutions</option>
-        <option value="Private institutions">Private institutions</option>
-        <option value="Big business">Big business</option>
-        <option value="Showroom">Showroom</option>
-        <option value="Healthcare">Healthcare</option>
-        <option value="Banks & Financial">Banks &amp; Financial</option>
-        <option value="MSME / Factories">MSME / Factories</option>
-        <option value="Others">Others</option>
-      </select>
-      <p class="error-text">Please select a visited category.</p>
-    </div>
-
-    <div id="others_container" class="space-y-1 hidden">
-      <label for="other_category_name" class="glass-label">Specify Other Institution Type <span class="text-red-400">*</span></label>
-      <input type="text" id="other_category_name" name="other_category_name" class="glass-input"
-        placeholder="Enter institution type" minlength="2" maxlength="100">
-      <p class="error-text">Please specify the institution type.</p>
-    </div>
-
-    <div id="field-bpm_accompanied" class="space-y-1">
-      <label for="bpm_accompanied" class="glass-label">7. Whether BPM/ABPM accompanied during the visit? <span class="text-red-400">*</span></label>
-      <select id="bpm_accompanied" name="bpm_accompanied" class="glass-input" required>
-        <option value="">Select Option</option>
-        <option value="Yes">Yes</option>
-        <option value="No">No</option>
-      </select>
-      <p class="error-text">Please select an option.</p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-      <div id="field-institution_name" class="space-y-1 md:col-span-2">
-        <label for="institution_name" class="glass-label">8. Name of Institution Visited <span class="text-red-400">*</span></label>
-        <input type="text" id="institution_name" name="institution_name" class="glass-input"
-          placeholder="e.g. Dhemaji College" minlength="2" maxlength="150" required>
-        <p class="error-text">Enter a valid institution name. Letters and numbers are permitted.</p>
-      </div>
-
-      <div id="field-phone_no" class="space-y-1">
-        <label for="phone_no" class="glass-label">9. Phone No. of Institution <span class="text-red-400">*</span></label>
-        <input type="tel" id="phone_no" name="phone_no" class="glass-input"
-          placeholder="10-digit mobile number" inputmode="numeric"
-          pattern="[6-9][0-9]{9}" minlength="10" maxlength="10" required>
-        <p class="error-text">Enter a valid 10-digit Indian mobile number starting with 6–9.</p>
-      </div>
-
-      <div id="field-address" class="space-y-1">
-        <label for="address" class="glass-label">10. Address of Institution <span class="text-red-400">*</span></label>
-        <input type="text" id="address" name="address" class="glass-input"
-          placeholder="Location / Town / Village" minlength="3" maxlength="250" required>
-        <p class="error-text">Please enter a valid institution address.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- SECTION 2: BUSINESS AND ACCOUNTS -->
-  <section class="glass-card p-5 space-y-4 shadow-xl">
-    <h2 class="text-sm font-semibold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-      <i data-lucide="trending-up" class="w-4 h-4"></i>
-      Business &amp; Accounts Gathered
-    </h2>
-
-    <div class="grid grid-cols-2 gap-4">
-      <div class="space-y-1">
-        <label for="posb_count" class="glass-label">POSB Accounts</label>
-        <input type="number" id="posb_count" name="posb_count" min="0" max="1000000" step="1" value="0" class="glass-input calc-trigger">
-        <p class="error-text">Enter a valid non-negative whole number.</p>
-      </div>
-      <div class="space-y-1">
-        <label for="td_count" class="glass-label">TD Accounts</label>
-        <input type="number" id="td_count" name="td_count" min="0" max="1000000" step="1" value="0" class="glass-input calc-trigger">
-        <p class="error-text">Enter a valid non-negative whole number.</p>
-      </div>
-      <div class="space-y-1">
-        <label for="ssa_count" class="glass-label">SSA Accounts</label>
-        <input type="number" id="ssa_count" name="ssa_count" min="0" max="1000000" step="1" value="0" class="glass-input calc-trigger">
-        <p class="error-text">Enter a valid non-negative whole number.</p>
-      </div>
-      <div class="space-y-1">
-        <label for="rd_count" class="glass-label">RD Accounts</label>
-        <input type="number" id="rd_count" name="rd_count" min="0" max="1000000" step="1" value="0" class="glass-input calc-trigger">
-        <p class="error-text">Enter a valid non-negative whole number.</p>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-      <div class="space-y-1">
-        <label for="pli_amount" class="glass-label">PLI Premium Collected (₹)</label>
-        <input type="number" id="pli_amount" name="pli_amount" min="0" max="999999999999" step="0.01" value="0" class="glass-input calc-trigger">
-        <p class="error-text">Enter a valid non-negative amount.</p>
-      </div>
-      <div class="space-y-1">
-        <label for="rpli_amount" class="glass-label">RPLI Premium Collected (₹)</label>
-        <input type="number" id="rpli_amount" name="rpli_amount" min="0" max="999999999999" step="0.01" value="0" class="glass-input calc-trigger">
-        <p class="error-text">Enter a valid non-negative amount.</p>
-      </div>
-      <div class="space-y-1">
-        <label for="parcel_amount" class="glass-label">Parcel Amount Collected (₹)</label>
-        <input type="number" id="parcel_amount" name="parcel_amount" min="0" max="999999999999" step="0.01" value="0" class="glass-input calc-trigger">
-        <p class="error-text">Enter a valid non-negative amount.</p>
-      </div>
-      <div class="space-y-1">
-        <label for="document_amount" class="glass-label">Document Amount Collected (₹)</label>
-        <input type="number" id="document_amount" name="document_amount" min="0" max="999999999999" step="0.01" value="0" class="glass-input calc-trigger">
-        <p class="error-text">Enter a valid non-negative amount.</p>
-      </div>
-      <div class="space-y-1">
-        <label for="logistics_amount" class="glass-label">Logistics Post Business (₹)</label>
-        <input type="number" id="logistics_amount" name="logistics_amount" min="0" max="999999999999" step="0.01" value="0" class="glass-input calc-trigger">
-        <p class="error-text">Enter a valid non-negative amount.</p>
-      </div>
-      <div class="space-y-1">
-        <label for="aadhaar_amount" class="glass-label">Aadhaar Amount Collected (₹)</label>
-        <input type="number" id="aadhaar_amount" name="aadhaar_amount" min="0" max="999999999999" step="0.01" value="0" class="glass-input calc-trigger">
-        <p class="error-text">Enter a valid non-negative amount.</p>
-      </div>
-      <div class="space-y-1 md:col-span-2">
-        <label for="kvic_verification" class="glass-label">KVIC Verification (Count)</label>
-        <input type="number" id="kvic_verification" name="kvic_verification" min="0" max="1000000" step="1" value="0" class="glass-input calc-trigger">
-        <p class="error-text">Enter a valid non-negative whole number.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- SECTION 3: BUSINESS POTENTIAL AND FOLLOW-UP -->
-  <section class="glass-card p-5 space-y-4 shadow-xl">
-    <h2 class="text-sm font-semibold uppercase tracking-wider text-sky-400 flex items-center gap-2">
-      <i data-lucide="target" class="w-4 h-4"></i>
-      Potential &amp; Follow-up
-    </h2>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div id="field-expected_business" class="space-y-1">
-        <label for="expected_business" class="glass-label">Expected Business from Institution (All Verticals) (₹) <span class="text-red-400">*</span></label>
-        <input type="number" id="expected_business" name="expected_business" min="0"
-          max="999999999999" step="0.01" value="0" class="glass-input" required>
-        <p class="error-text">Enter a valid expected business amount greater than or equal to zero.</p>
-      </div>
-
-      <div id="field-primary_vertical" class="space-y-1">
-        <label for="primary_vertical" class="glass-label">Most business is expected from <span class="text-red-400">*</span></label>
-        <select id="primary_vertical" name="primary_vertical" class="glass-input" required>
-          <option value="">Select Vertical</option>
-          <option value="Mails">Mails</option>
-          <option value="Parcel">Parcel</option>
-          <option value="IR&GB">IR&amp;GB</option>
-          <option value="POSB">POSB</option>
-          <option value="Insurance">Insurance</option>
-          <option value="Aadhaar">Aadhaar</option>
-        </select>
-        <p class="error-text">Please select a primary vertical.</p>
-      </div>
-    </div>
-
-    <div class="space-y-1">
-      <label for="business_potential_description" class="glass-label">Describe Business Potential from Institution</label>
-      <textarea id="business_potential_description" name="business_potential_description"
-        rows="3" maxlength="2000" class="glass-input"
-        placeholder="Notes on scope, upcoming campaigns, or bulk opportunities..."></textarea>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-      <div id="field-followup_reqd" class="space-y-1">
-        <label for="followup_reqd" class="glass-label">Follow-up Required <span class="text-red-400">*</span></label>
-        <select id="followup_reqd" name="followup_reqd" class="glass-input" required>
-          <option value="">Select Option</option>
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-        </select>
-        <p class="error-text">Please select an option.</p>
-      </div>
-
-      <div id="followup_date_container" class="space-y-1 hidden">
-        <label for="followup_date" class="glass-label">Follow-up Date <span class="text-red-400">*</span></label>
-        <div class="flex items-center gap-2">
-          <input type="date" id="followup_date" name="followup_date" class="glass-input">
-          <button type="button" class="date-picker-button"
-            onclick="openDatePicker('followup_date')" aria-label="Open follow-up date calendar" title="Open calendar">
-            <i data-lucide="calendar-days" class="w-5 h-5 text-white"></i>
-          </button>
+    <form id="marketingForm" novalidate>
+      <!-- EXECUTIVE DETAILS -->
+      <section class="form-card">
+        <div class="section-heading">
+          <span class="section-icon"><i data-lucide="user-round"></i></span>
+          <div>
+            <h3>Executive & Visit Details</h3>
+            <p>Information about the official and the visit.</p>
+          </div>
         </div>
-        <p class="error-text">Please select a valid follow-up date that is not earlier than the visit date.</p>
-      </div>
-    </div>
-  </section>
 
-  <!-- STICKY BOTTOM BAR -->
-  <div class="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur-xl border-t border-slate-700 p-3 sm:p-4 shadow-2xl">
-    <div class="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-      <div class="w-full sm:w-auto">
-        <span class="text-xs text-slate-400 block uppercase font-medium tracking-wider">Total Revenue</span>
-        <span id="displayTotalRevenue" class="text-2xl font-black text-emerald-400">₹0.00</span>
-      </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="executive_name">Executive Name <span>*</span></label>
+            <input id="executive_name" name="executive_name" type="text"
+              placeholder="Enter full name" autocomplete="name" required>
+            <small class="field-error"></small>
+          </div>
 
-      <div class="flex items-center gap-2 w-full sm:w-auto">
-        <button type="button" id="downloadPdfBtn"
-          class="flex-1 sm:flex-none px-3 sm:px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl border border-slate-700 transition flex items-center justify-center gap-2 text-sm shadow-md">
-          <i data-lucide="file-text" class="w-4 h-4 text-amber-400"></i>
-          Download PDF
+          <div class="field">
+            <label for="designation">Designation <span>*</span></label>
+            <select id="designation" name="designation" required>
+              <option value="">Select designation</option>
+              <option>GDS</option>
+              <option>ME</option>
+              <option>MTS</option>
+              <option>PA</option>
+              <option>OS(Mails)</option>
+              <option>Postman</option>
+            </select>
+            <small class="field-error"></small>
+          </div>
+
+          <div class="field">
+            <label for="post_office">Reporting Post Office <span>*</span></label>
+            <select id="post_office" name="post_office" required>
+              <option value="">Select post office</option>
+              <option>Dhemaji SO</option>
+              <option>Sissirborgaon SO</option>
+              <option>Simen Mukh SO</option>
+              <option>Jonai SO</option>
+              <option>Machkhowa SO</option>
+              <option>Bordoloni SO</option>
+            </select>
+            <small class="field-error"></small>
+          </div>
+
+          <div class="field">
+            <label for="nearest_bo">Nearest Branch Post Office</label>
+            <input id="nearest_bo" name="nearest_bo" type="text"
+              placeholder="Enter BO name, if applicable">
+            <small class="field-error"></small>
+          </div>
+
+          <div class="field">
+            <label for="visit_date">Visit Date <span>*</span></label>
+            <div class="date-wrap">
+              <input id="visit_date" name="visit_date" type="date" required>
+              <button type="button" class="calendar-button"
+                data-date-target="visit_date" aria-label="Choose visit date">
+                <i data-lucide="calendar-days"></i>
+              </button>
+            </div>
+            <small class="field-error"></small>
+          </div>
+
+          <div class="field">
+            <label for="visited_category">Category Visited <span>*</span></label>
+            <select id="visited_category" name="visited_category" required>
+              <option value="">Select category</option>
+              <option>Shopkeeper / Trader</option>
+              <option>Business Establishment</option>
+              <option>Educational Institution</option>
+              <option>Government Office</option>
+              <option>Handloom Weaver</option>
+              <option>Self Help Group (SHG)</option>
+              <option>Farmer / Agricultural Business</option>
+              <option>Individual Customer</option>
+              <option>Others</option>
+            </select>
+            <small class="field-error"></small>
+          </div>
+
+          <div class="field hidden" id="categoryOtherWrap">
+            <label for="category_other">Specify Other Category <span>*</span></label>
+            <input id="category_other" name="category_other" type="text"
+              placeholder="Specify the category">
+            <small class="field-error"></small>
+          </div>
+
+          <div class="field">
+            <label for="bpm_accompanied">BPM Accompanied?</label>
+            <select id="bpm_accompanied" name="bpm_accompanied">
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+            <small class="field-error"></small>
+          </div>
+        </div>
+      </section>
+
+      <!-- INSTITUTION / CUSTOMER -->
+      <section class="form-card">
+        <div class="section-heading">
+          <span class="section-icon"><i data-lucide="building-2"></i></span>
+          <div>
+            <h3>Institution / Customer Details</h3>
+            <p>Details of the person or organisation visited.</p>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="institution_name">Institution / Customer Name <span>*</span></label>
+            <input id="institution_name" name="institution_name" type="text"
+              placeholder="Enter institution or customer name" required>
+            <small class="field-error"></small>
+          </div>
+
+          <div class="field">
+            <label for="phone_no">Mobile Number <span>*</span></label>
+            <input id="phone_no" name="phone_no" type="tel" inputmode="numeric"
+              maxlength="10" placeholder="10-digit Indian mobile number" required>
+            <small class="field-error"></small>
+          </div>
+
+          <div class="field full-width">
+            <label for="address">Address / Location</label>
+            <textarea id="address" name="address" rows="2"
+              placeholder="Enter village, locality or address"></textarea>
+            <small class="field-error"></small>
+          </div>
+        </div>
+      </section>
+
+      <!-- BUSINESS PROCUREMENT -->
+      <section class="form-card">
+        <div class="section-heading">
+          <span class="section-icon"><i data-lucide="chart-no-axes-combined"></i></span>
+          <div>
+            <h3>Business Procurement</h3>
+            <p>Enter the business generated during the visit. Enter 0 where there was no business.</p>
+          </div>
+        </div>
+
+        <h4 class="subsection-title">Savings Accounts Opened</h4>
+        <div class="form-grid">
+          <div class="field">
+            <label for="posb_count">POSB Accounts</label>
+            <input id="posb_count" name="posb_count" type="number" min="0" step="1" value="0">
+            <small class="field-error"></small>
+          </div>
+          <div class="field">
+            <label for="td_count">Time Deposit (TD) Accounts</label>
+            <input id="td_count" name="td_count" type="number" min="0" step="1" value="0">
+            <small class="field-error"></small>
+          </div>
+          <div class="field">
+            <label for="ssa_count">Sukanya Samriddhi (SSA) Accounts</label>
+            <input id="ssa_count" name="ssa_count" type="number" min="0" step="1" value="0">
+            <small class="field-error"></small>
+          </div>
+          <div class="field">
+            <label for="rd_count">Recurring Deposit (RD) Accounts</label>
+            <input id="rd_count" name="rd_count" type="number" min="0" step="1" value="0">
+            <small class="field-error"></small>
+          </div>
+        </div>
+
+        <h4 class="subsection-title">Premiums, Bookings & Other Services</h4>
+        <div class="form-grid">
+          <div class="field">
+            <label for="pli_amount">PLI Premium Collected (₹)</label>
+            <input id="pli_amount" name="pli_amount" type="number" min="0" step="0.01" value="0">
+            <small class="field-error"></small>
+          </div>
+          <div class="field">
+            <label for="rpli_amount">RPLI Premium Collected (₹)</label>
+            <input id="rpli_amount" name="rpli_amount" type="number" min="0" step="0.01" value="0">
+            <small class="field-error"></small>
+          </div>
+          <div class="field">
+            <label for="parcel_amount">Parcel Booking Amount (₹)</label>
+            <input id="parcel_amount" name="parcel_amount" type="number" min="0" step="0.01" value="0">
+            <small class="field-error"></small>
+          </div>
+          <div class="field">
+            <label for="document_amount">Document / Speed Post Amount (₹)</label>
+            <input id="document_amount" name="document_amount" type="number" min="0" step="0.01" value="0">
+            <small class="field-error"></small>
+          </div>
+          <div class="field">
+            <label for="logistics_amount">Logistics Business Amount (₹)</label>
+            <input id="logistics_amount" name="logistics_amount" type="number" min="0" step="0.01" value="0">
+            <small class="field-error"></small>
+          </div>
+          <div class="field">
+            <label for="aadhaar_amount">Aadhaar Service Amount (₹)</label>
+            <input id="aadhaar_amount" name="aadhaar_amount" type="number" min="0" step="0.01" value="0">
+            <small class="field-error"></small>
+          </div>
+          <div class="field">
+            <label for="kvic_verification">KVIC Verifications Completed</label>
+            <input id="kvic_verification" name="kvic_verification" type="number" min="0" step="1" value="0">
+            <small class="field-error"></small>
+          </div>
+        </div>
+
+        <div class="revenue-panel">
+          <div class="revenue-heading">
+            <div>
+              <p class="revenue-eyebrow">ESTIMATED REVENUE CONTRIBUTION</p>
+              <h4>Revenue Summary</h4>
+            </div>
+            <span class="revenue-icon"><i data-lucide="indian-rupee"></i></span>
+          </div>
+          <div id="revenueBreakdown" class="revenue-breakdown"></div>
+          <div class="total-revenue">
+            <span>Total Estimated Revenue</span>
+            <strong id="totalRevenueDisplay">₹0.00</strong>
+          </div>
+          <p class="revenue-disclaimer">
+            Calculated using the configured indicative rates. These estimates are not
+            a substitute for official accounting or revenue-credit figures.
+          </p>
+        </div>
+      </section>
+
+      <!-- BUSINESS POTENTIAL -->
+      <section class="form-card">
+        <div class="section-heading">
+          <span class="section-icon"><i data-lucide="target"></i></span>
+          <div>
+            <h3>Business Potential & Follow-up</h3>
+            <p>Capture future opportunities identified during the visit.</p>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="expected_business">Expected Business Value (₹) <span>*</span></label>
+            <input id="expected_business" name="expected_business" type="number"
+              min="0" step="0.01" placeholder="Enter estimated value" required>
+            <small class="field-error"></small>
+          </div>
+
+          <div class="field">
+            <label for="primary_vertical">Primary Business Vertical</label>
+            <select id="primary_vertical" name="primary_vertical">
+              <option value="">Select vertical</option>
+              <option>POSB / Small Savings</option>
+              <option>PLI / RPLI</option>
+              <option>Parcel / Speed Post</option>
+              <option>Logistics</option>
+              <option>Aadhaar Services</option>
+              <option>KVIC / Government Services</option>
+              <option>Handloom / E-commerce</option>
+              <option>Other</option>
+            </select>
+            <small class="field-error"></small>
+          </div>
+
+          <div class="field full-width">
+            <label for="business_potential_description">Business Potential / Discussion Notes</label>
+            <textarea id="business_potential_description" name="business_potential_description"
+              rows="3" placeholder="Describe the opportunity, customer needs and proposed next steps"></textarea>
+            <small class="field-error"></small>
+          </div>
+
+          <div class="field">
+            <label for="followup_reqd">Follow-up Required?</label>
+            <select id="followup_reqd" name="followup_reqd">
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+            <small class="field-error"></small>
+          </div>
+
+          <div class="field hidden" id="followupDateWrap">
+            <label for="followup_date">Follow-up Date <span>*</span></label>
+            <div class="date-wrap">
+              <input id="followup_date" name="followup_date" type="date">
+              <button type="button" class="calendar-button"
+                data-date-target="followup_date" aria-label="Choose follow-up date">
+                <i data-lucide="calendar-days"></i>
+              </button>
+            </div>
+            <small class="field-error"></small>
+          </div>
+        </div>
+      </section>
+
+      <!-- FORM ACTIONS -->
+      <div class="form-actions">
+        <button type="button" id="resetButton" class="button button-secondary">
+          <i data-lucide="rotate-ccw"></i> Reset Form
         </button>
-        <button type="submit" id="submitBtn"
-          class="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm">
-          <i data-lucide="send" class="w-4 h-4"></i>
-          Submit Report
+        <button type="button" id="pdfButton" class="button button-outline">
+          <i data-lucide="file-down"></i> Export PDF
+        </button>
+        <button type="submit" id="submitButton" class="button button-primary">
+          <i data-lucide="cloud-upload"></i> Submit Report
         </button>
       </div>
-    </div>
-  </div>
-</form>
-</main>
 
-<script>
-"use strict";
-
-/* -------------------------------------------------------
-   SUPABASE CONFIGURATION
-------------------------------------------------------- */
-
-const SUPABASE_URL = 'https://amqlgdiiosmhntstuajl.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_BLs1lpBBBOsXPSyqfRJHhQ_tY0azVsR';
-
-const dbClient = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
-
-let currentCalculatedRevenue = 0;
-
-/* -------------------------------------------------------
-   INITIALIZATION
-------------------------------------------------------- */
-
-document.addEventListener('DOMContentLoaded', function () {
-  if (window.lucide) lucide.createIcons();
-
-  initDate();
-  toggleOthersField();
-  toggleFollowupDate();
-  calculateTotalRevenue();
-
-  document.getElementById('visited_category')
-    .addEventListener('change', toggleOthersField);
-
-  document.getElementById('followup_reqd')
-    .addEventListener('change', toggleFollowupDate);
-
-  document.querySelectorAll('.calc-trigger').forEach(function (input) {
-    input.addEventListener('input', calculateTotalRevenue);
-    input.addEventListener('change', calculateTotalRevenue);
-  });
-
-  // Validate individual fields as the user leaves them.
-  document.querySelectorAll('#reportForm input, #reportForm select, #reportForm textarea')
-    .forEach(function (input) {
-      input.addEventListener('blur', function () {
-        validateSingleField(input);
-      });
-    });
-
-  document.getElementById('reportForm')
-    .addEventListener('submit', handleFormSubmit);
-
-  document.getElementById('downloadPdfBtn')
-    .addEventListener('click', downloadPDFReport);
-});
-
-/* -------------------------------------------------------
-   DATE HELPERS
-------------------------------------------------------- */
-
-function getLocalDateString(date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function initDate() {
-  const visitDate = document.getElementById('visit_date');
-  if (visitDate && !visitDate.value) {
-    visitDate.value = getLocalDateString();
-  }
-}
-
-// Open the native date picker when supported by the browser.
-function openDatePicker(fieldId) {
-  const input = document.getElementById(fieldId);
-  if (!input || input.disabled) return;
-
-  try {
-    input.focus({ preventScroll: true });
-
-    if (typeof input.showPicker === 'function') {
-      input.showPicker();
-    } else {
-      input.click();
-    }
-  } catch (error) {
-    try {
-      input.focus();
-      input.click();
-    } catch (fallbackError) {
-      console.warn('Unable to open date picker.', fallbackError);
-    }
-  }
-}
-
-function validDateString(value) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-
-  const [year, month, day] = value.split('-').map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-
-  return date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day;
-}
-
-/* -------------------------------------------------------
-   CONDITIONAL FIELDS
-------------------------------------------------------- */
-
-function toggleOthersField() {
-  const category = document.getElementById('visited_category').value;
-  const container = document.getElementById('others_container');
-  const otherInput = document.getElementById('other_category_name');
-  const show = category === 'Others';
-
-  container.classList.toggle('hidden', !show);
-  otherInput.required = show;
-
-  if (!show) {
-    otherInput.value = '';
-    container.classList.remove('has-error');
-  }
-}
-
-function toggleFollowupDate() {
-  const choice = document.getElementById('followup_reqd').value;
-  const container = document.getElementById('followup_date_container');
-  const dateInput = document.getElementById('followup_date');
-  const show = choice === 'Yes';
-
-  container.classList.toggle('hidden', !show);
-  dateInput.required = show;
-
-  if (!show) {
-    dateInput.value = '';
-    container.classList.remove('has-error');
-  }
-}
-
-/* -------------------------------------------------------
-   FIELD VALIDATION
-------------------------------------------------------- */
-
-const NAME_PATTERN =
-  /^[\p{L}\p{M}]+(?:[ .'-][\p{L}\p{M}]+)*$/u;
-
-function isMeaningfulText(value) {
-  return /[\p{L}\p{N}]/u.test(value) &&
-    !/[\u0000-\u001F<>]/.test(value);
-}
-
-function validateSingleField(input) {
-  const id = input.id;
-  const value = input.value.trim();
-  const wrapper =
-    document.getElementById('field-' + id) ||
-    input.closest('.space-y-1');
-
-  if (!wrapper) return true;
-
-  wrapper.classList.remove('has-error');
-
-  let valid = true;
-
-  if (input.required && !value) {
-    // A hidden follow-up date is only required when Yes is selected.
-    if (id !== 'followup_date' ||
-        document.getElementById('followup_reqd').value === 'Yes') {
-      valid = false;
-    }
-  }
-
-  if (valid && id === 'executive_name') {
-    valid = value.length >= 2 &&
-      value.length <= 100 &&
-      NAME_PATTERN.test(value);
-  }
-
-  if (valid && id === 'nearest_bo') {
-    valid = value.length >= 2 &&
-      value.length <= 150 &&
-      isMeaningfulText(value);
-  }
-
-  if (valid && id === 'institution_name') {
-    valid = value.length >= 2 &&
-      value.length <= 150 &&
-      isMeaningfulText(value);
-  }
-
-  if (valid && id === 'phone_no') {
-    valid = /^[6-9]\d{9}$/.test(value);
-  }
-
-  if (valid && id === 'address') {
-    valid = value.length >= 3 &&
-      value.length <= 250 &&
-      isMeaningfulText(value);
-  }
-
-  if (valid && id === 'other_category_name' &&
-      document.getElementById('visited_category').value === 'Others') {
-    valid = value.length >= 2 &&
-      value.length <= 100 &&
-      isMeaningfulText(value);
-  }
-
-  if (valid && id === 'visit_date') {
-    valid = validDateString(value);
-  }
-
-  if (valid && id === 'followup_date' &&
-      document.getElementById('followup_reqd').value === 'Yes') {
-    const visitDate = document.getElementById('visit_date').value;
-    valid = validDateString(value) &&
-      (!validDateString(visitDate) || value >= visitDate);
-  }
-
-  if (valid && input.type === 'number') {
-    const n = input.valueAsNumber;
-    valid = value !== '' &&
-      Number.isFinite(n) &&
-      n >= 0 &&
-      (input.max === '' || n <= Number(input.max)) &&
-      input.validity.valid;
-  }
-
-  if (!valid) wrapper.classList.add('has-error');
-
-  return valid;
-}
-
-function validateForm() {
-  let valid = true;
-
-  document.querySelectorAll('.has-error').forEach(function (el) {
-    el.classList.remove('has-error');
-  });
-
-  toggleOthersField();
-  toggleFollowupDate();
-
-  const requiredIds = [
-    'executive_name',
-    'designation',
-    'post_office',
-    'nearest_bo',
-    'visit_date',
-    'visited_category',
-    'bpm_accompanied',
-    'institution_name',
-    'phone_no',
-    'address',
-    'expected_business',
-    'primary_vertical',
-    'followup_reqd'
-  ];
-
-  requiredIds.forEach(function (id) {
-    const input = document.getElementById(id);
-    if (!validateSingleField(input)) valid = false;
-  });
-
-  // All numerical inputs must be valid and non-negative.
-  document.querySelectorAll('#reportForm input[type="number"]')
-    .forEach(function (input) {
-      if (!validateSingleField(input)) valid = false;
-    });
-
-  if (document.getElementById('visited_category').value === 'Others') {
-    if (!validateSingleField(document.getElementById('other_category_name'))) {
-      valid = false;
-    }
-  }
-
-  if (document.getElementById('followup_reqd').value === 'Yes') {
-    if (!validateSingleField(document.getElementById('followup_date'))) {
-      valid = false;
-    }
-  }
-
-  if (!valid) {
-    alert('Please correct the highlighted fields before continuing.');
-
-    const firstError = document.querySelector('.has-error');
-    if (firstError) {
-      firstError.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center'
-      });
-    }
-  }
-
-  return valid;
-}
-
-/* -------------------------------------------------------
-   REVENUE CALCULATION
-   Original formulas retained.
-------------------------------------------------------- */
-
-function getNumericValue(id) {
-  const element = document.getElementById(id);
-  const value = element.valueAsNumber;
-
-  return Number.isFinite(value) && value >= 0 ? value : 0;
-}
-
-function calculateTotalRevenue() {
-  const posb = getNumericValue('posb_count');
-  const td = getNumericValue('td_count');
-  const ssa = getNumericValue('ssa_count');
-  const rd = getNumericValue('rd_count');
-
-  const pli = getNumericValue('pli_amount');
-  const rpli = getNumericValue('rpli_amount');
-  const parcel = getNumericValue('parcel_amount');
-  const documentAmt = getNumericValue('document_amount');
-  const logistics = getNumericValue('logistics_amount');
-  const aadhaar = getNumericValue('aadhaar_amount');
-  const kvicCount = getNumericValue('kvic_verification');
-
-  const accountsTotal = (posb + td + ssa + rd) * 219;
-  const rpliRevenue = rpli * 0.12;
-  const pliRevenue = pli * 0.04;
-  const mailParcelRevenue = parcel + documentAmt;
-  const logisticsRevenue = logistics * 0.20;
-  const aadhaarRevenue = aadhaar * 0.82;
-  const kvicRevenue = kvicCount * 3540 * 0.82;
-
-  currentCalculatedRevenue =
-    accountsTotal +
-    rpliRevenue +
-    pliRevenue +
-    mailParcelRevenue +
-    logisticsRevenue +
-    aadhaarRevenue +
-    kvicRevenue;
-
-  document.getElementById('displayTotalRevenue').textContent =
-    '₹' + currentCalculatedRevenue.toLocaleString('en-IN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-}
-
-/* -------------------------------------------------------
-   FORM PAYLOAD
-------------------------------------------------------- */
-
-function getFormDataPayload() {
-  const category = document.getElementById('visited_category').value;
-
-  const finalCategory = category === 'Others'
-    ? document.getElementById('other_category_name').value.trim()
-    : category;
-
-  return {
-    executive_name: document.getElementById('executive_name').value.trim(),
-    designation: document.getElementById('designation').value,
-    post_office: document.getElementById('post_office').value,
-    nearest_bo: document.getElementById('nearest_bo').value.trim(),
-    visit_date: document.getElementById('visit_date').value,
-    visited_category: finalCategory,
-    bpm_accompanied: document.getElementById('bpm_accompanied').value,
-
-    institution_name: document.getElementById('institution_name').value.trim(),
-    phone_no: document.getElementById('phone_no').value.trim(),
-    address: document.getElementById('address').value.trim(),
-
-    posb_count: Math.trunc(getNumericValue('posb_count')),
-    td_count: Math.trunc(getNumericValue('td_count')),
-    ssa_count: Math.trunc(getNumericValue('ssa_count')),
-    rd_count: Math.trunc(getNumericValue('rd_count')),
-
-    pli_amount: getNumericValue('pli_amount'),
-    rpli_amount: getNumericValue('rpli_amount'),
-    parcel_amount: getNumericValue('parcel_amount'),
-    document_amount: getNumericValue('document_amount'),
-    logistics_amount: getNumericValue('logistics_amount'),
-    aadhaar_amount: getNumericValue('aadhaar_amount'),
-    kvic_verification: Math.trunc(getNumericValue('kvic_verification')),
-
-    expected_business: getNumericValue('expected_business'),
-    primary_vertical: document.getElementById('primary_vertical').value,
-    business_potential_description:
-      document.getElementById('business_potential_description').value.trim(),
-
-    followup_reqd: document.getElementById('followup_reqd').value,
-    followup_date:
-      document.getElementById('followup_reqd').value === 'Yes'
-        ? document.getElementById('followup_date').value
-        : null,
-
-    total_revenue: Number(currentCalculatedRevenue.toFixed(2)),
-    created_at: new Date().toISOString()
-  };
-}
-
-/* -------------------------------------------------------
-   SUPABASE SUBMISSION
-------------------------------------------------------- */
-
-async function handleFormSubmit(event) {
-  event.preventDefault();
-
-  if (!validateForm()) return;
-
-  const payload = getFormDataPayload();
-  const submitBtn = document.getElementById('submitBtn');
-  const originalContent = submitBtn.innerHTML;
-
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Submitting...';
-
-  try {
-    const { error } = await dbClient
-      .from('daily_marketing_reports')
-      .insert([payload]);
-
-    if (error) throw error;
-
-    alert('Report successfully submitted and saved to Supabase!');
-
-    document.getElementById('reportForm').reset();
-
-    document.querySelectorAll('.has-error').forEach(function (el) {
-      el.classList.remove('has-error');
-    });
-
-    initDate();
-    toggleOthersField();
-    toggleFollowupDate();
-    calculateTotalRevenue();
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  } catch (error) {
-    console.error('Supabase submission error:', error);
-    alert('Error saving report to Supabase: ' +
-      (error.message || 'An unexpected error occurred.'));
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = originalContent;
-    if (window.lucide) lucide.createIcons();
-  }
-}
-
-/* -------------------------------------------------------
-   PDF EXPORT
-------------------------------------------------------- */
-
-function downloadPDFReport() {
-  if (!validateForm()) return;
-
-  if (!window.jspdf || !window.jspdf.jsPDF) {
-    alert('PDF library could not be loaded. Check your internet connection.');
-    return;
-  }
-
-  const p = getFormDataPayload();
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-
-  function money(value) {
-    return 'Rs. ' + Number(value).toLocaleString('en-IN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  }
-
-  // Header
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, pageWidth, 42, 'F');
-  doc.setFillColor(217, 119, 6);
-  doc.rect(0, 42, pageWidth, 2.5, 'F');
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.text('INDIA POST - DHEMAJI SUB DIVISION', 14, 18);
-
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(203, 213, 225);
-  doc.text('Daily Institutional Marketing & Business Visit Report', 14, 27);
-
-  doc.setFontSize(8);
-  doc.setTextColor(148, 163, 184);
-  doc.text(
-    'Generated: ' + new Date().toLocaleString('en-IN'),
-    pageWidth - 14,
-    27,
-    { align: 'right' }
-  );
-
-  let y = 52;
-
-  // Section 1
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(15, 23, 42);
-  doc.text('1. Executive & Visit Details', 14, y);
-
-  const detailsData = [
-    ['Executive Name', p.executive_name, 'Designation', p.designation],
-    ['Post Office', p.post_office, 'Nearest Branch Office', p.nearest_bo],
-    ['Visit Date', p.visit_date, 'Visited Category', p.visited_category],
-    ['Institution Name', p.institution_name, 'BPM / ABPM Accompanied', p.bpm_accompanied],
-    ['Contact Phone', p.phone_no, 'Institution Address', p.address]
-  ];
-
-  doc.autoTable({
-    startY: y + 4,
-    body: detailsData,
-    theme: 'grid',
-    styles: {
-      fontSize: 9,
-      cellPadding: 3,
-      textColor: [30, 41, 59],
-      overflow: 'linebreak'
-    },
-    columnStyles: {
-      0: { fontStyle: 'bold', fillColor: [241, 245, 249], cellWidth: 42 },
-      1: { cellWidth: 53 },
-      2: { fontStyle: 'bold', fillColor: [241, 245, 249], cellWidth: 42 },
-      3: { cellWidth: 53 }
-    },
-    margin: { left: 14, right: 14 }
-  });
-
-  y = doc.lastAutoTable.finalY + 10;
-
-  if (y > pageHeight - 70) {
-    doc.addPage();
-    y = 20;
-  }
-
-  // Section 2
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(15, 23, 42);
-  doc.text('2. Business Gathered & Total Revenue Breakdown', 14, y);
-
-  const businessData = [
-    ['POSB Accounts', p.posb_count, 'Rs. 219 / account', money(p.posb_count * 219)],
-    ['TD Accounts', p.td_count, 'Rs. 219 / account', money(p.td_count * 219)],
-    ['SSA Accounts', p.ssa_count, 'Rs. 219 / account', money(p.ssa_count * 219)],
-    ['RD Accounts', p.rd_count, 'Rs. 219 / account', money(p.rd_count * 219)],
-    ['PLI Premium Collected', money(p.pli_amount), '4% of premium', money(p.pli_amount * 0.04)],
-    ['RPLI Premium Collected', money(p.rpli_amount), '12% of premium', money(p.rpli_amount * 0.12)],
-    ['Parcel Amount Collected', money(p.parcel_amount), '100% amount', money(p.parcel_amount)],
-    ['Document Amount Collected', money(p.document_amount), '100% amount', money(p.document_amount)],
-    ['Logistics Post Business', money(p.logistics_amount), '20% amount', money(p.logistics_amount * 0.20)],
-    ['Aadhaar Amount Collected', money(p.aadhaar_amount), 'Amount - 18% GST', money(p.aadhaar_amount * 0.82)],
-    ['KVIC Verification (Count)', p.kvic_verification, 'Rs. 3540 - 18% GST / verification', money(p.kvic_verification * 3540 * 0.82)]
-  ];
-
-  doc.autoTable({
-    startY: y + 4,
-    head: [['Vertical / Item', 'Collected Value', 'Weightage Formula', 'Generated Revenue']],
-    body: businessData,
-    theme: 'striped',
-    headStyles: {
-      fillColor: [15, 23, 42],
-      textColor: [255, 255, 255],
-      fontStyle: 'bold'
-    },
-    styles: {
-      fontSize: 7.5,
-      cellPadding: 2.5,
-      textColor: [30, 41, 59],
-      overflow: 'linebreak'
-    },
-    columnStyles: {
-      0: { cellWidth: 48 },
-      1: { cellWidth: 39 },
-      2: { cellWidth: 48 },
-      3: { cellWidth: 47, fontStyle: 'bold', textColor: [21, 128, 61] }
-    },
-    margin: { left: 14, right: 14 }
-  });
-
-  y = doc.lastAutoTable.finalY + 6;
-
-  if (y > pageHeight - 30) {
-    doc.addPage();
-    y = 20;
-  }
-
-  doc.setFillColor(240, 253, 244);
-  doc.setDrawColor(34, 197, 94);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(14, y, pageWidth - 28, 14, 2, 2, 'FD');
-
-  doc.setTextColor(21, 128, 61);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-
-  doc.text(
-    'TOTAL REVENUE GENERATED: ' + money(p.total_revenue),
-    20,
-    y + 9.5
-  );
-
-  y += 22;
-
-  if (y > pageHeight - 60) {
-    doc.addPage();
-    y = 20;
-  }
-
-  // Section 3
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(15, 23, 42);
-  doc.text('3. Business Potential & Follow-up Plan', 14, y);
-
-  const potentialData = [
-    ['Expected Business (All Verticals)', money(p.expected_business)],
-    ['Primary Vertical Expected From', p.primary_vertical],
-    ['Business Potential Description', p.business_potential_description || 'N/A'],
-    [
-      'Follow-up Required',
-      p.followup_reqd +
-        (p.followup_date ? ' (Target Date: ' + p.followup_date + ')' : '')
-    ]
-  ];
-
-  doc.autoTable({
-    startY: y + 4,
-    body: potentialData,
-    theme: 'grid',
-    styles: {
-      fontSize: 9,
-      cellPadding: 3.5,
-      textColor: [30, 41, 59],
-      overflow: 'linebreak'
-    },
-    columnStyles: {
-      0: { fontStyle: 'bold', fillColor: [241, 245, 249], cellWidth: 70 },
-      1: { cellWidth: 120 }
-    },
-    margin: { left: 14, right: 14 }
-  });
-
-  // Footer on every page
-  const pageCount = doc.internal.getNumberOfPages();
-
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(148, 163, 184);
-
-    doc.text(
-      'India Post - Dhemaji Sub Division | Daily Marketing Report System',
-      14,
-      pageHeight - 10
-    );
-
-    doc.text(
-      'Page ' + i + ' of ' + pageCount,
-      pageWidth - 14,
-      pageHeight - 10,
-      { align: 'right' }
-    );
-  }
-
-  const safeName = p.executive_name
-    .replace(/[^a-zA-Z0-9_-]+/g, '_')
-    .replace(/^_+|_+$/g, '') || 'Executive';
-
-  doc.save(
-    'Daily_Marketing_Report_' + safeName + '_' + p.visit_date + '.pdf'
-  );
-}
-</script>
-
+      <p id="formStatus" class="form-status" role="status" aria-live="polite"></p>
+    </form>
+
+    <footer class="page-footer">
+      <p><strong>India Post</strong> · Dhemaji Sub Division</p>
+      <p>Daily Marketing Report System</p>
+    </footer>
+  </main>
 </body>
 </html>
