@@ -1,0 +1,620 @@
+
+:root {
+  --india-post-red: #D71920;
+  --india-post-dark: #7F1118;
+  --india-post-deep: #450A0A;
+  --red-light: #FDEBEC;
+  --red-border: #F2B8BC;
+  --text-primary: #241B1C;
+  --text-secondary: #716365;
+  --surface: #FFFFFF;
+  --surface-soft: #FFF8F8;
+  --border: #E8DCDD;
+  --success: #18794E;
+  --danger: #B42318;
+  --radius: 16px;
+  --shadow: 0 12px 36px rgba(48, 7, 10, 0.15);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text-primary);
+  background: linear-gradient(
+    135deg,
+    var(--india-post-deep) 0%,
+    var(--india-post-dark) 50%,
+    #991B1B 100%
+  );
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.top-header {
+  padding: 30px 22px 34px;
+  color: #FFFFFF;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(52, 5, 8, 0.23);
+}
+
+.header-inner {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.brand-mark {
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.brand-mark svg {
+  width: 29px;
+  height: 29px;
+  stroke-width: 1.8;
+}
+
+.brand-overline {
+  margin: 0 0 4px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2.2px;
+  opacity: 0.85;
+}
+
+.top-header h1 {
+  margin: 0;
+  font-size: clamp(23px, 4vw, 34px);
+  font-weight: 800;
+  letter-spacing: -0.7px;
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  margin: 7px 0 0;
+  color: #FFE4E5;
+  font-size: 13px;
+}
+
+.page-container {
+  width: min(1000px, calc(100% - 32px));
+  margin: 28px auto 0;
+}
+
+.intro-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  color: #FFFFFF;
+}
+
+.intro-row h2 {
+  margin: 0 0 4px;
+  font-size: 21px;
+  font-weight: 750;
+}
+
+.intro-row p {
+  margin: 0;
+  color: #FFE5E6;
+  font-size: 13px;
+}
+
+.required-note {
+  flex-shrink: 0;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 11px;
+}
+
+.required-note span,
+.field label span {
+  color: #F04452;
+  font-weight: 800;
+}
+
+.required-note span {
+  color: #FFFFFF;
+}
+
+.form-card {
+  margin-bottom: 18px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 18px;
+  margin-bottom: 21px;
+  border-bottom: 1px solid #F0E5E6;
+}
+
+.section-icon {
+  display: grid;
+  place-items: center;
+  width: 43px;
+  height: 43px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  color: var(--india-post-red);
+  background: var(--red-light);
+}
+
+.section-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.section-heading h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.section-heading p {
+  margin: 3px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 19px 20px;
+}
+
+.field {
+  min-width: 0;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #3D3032;
+}
+
+.field input,
+.field select,
+.field textarea {
+  display: block;
+  width: 100%;
+  min-height: 43px;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  border: 1px solid #D9CBCD;
+  border-radius: 9px;
+  outline: none;
+  background-color: #FFFFFF;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.field textarea {
+  min-height: 82px;
+  resize: vertical;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: #A29597;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--india-post-red);
+  box-shadow: 0 0 0 3px rgba(215, 25, 32, 0.12);
+}
+
+.field input[aria-invalid="true"],
+.field select[aria-invalid="true"],
+.field textarea[aria-invalid="true"] {
+  border-color: var(--danger);
+  background-color: #FFF9F9;
+}
+
+.field-error {
+  display: block;
+  min-height: 0;
+  margin-top: 4px;
+  color: var(--danger);
+  font-size: 11px;
+}
+
+.field-error:empty {
+  display: none;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.date-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.date-wrap input[type="date"] {
+  width: 100%;
+  min-width: 0;
+  padding-right: 45px;
+  color-scheme: light;
+}
+
+/* Keep native calendar indicator white on supported browsers. */
+.date-wrap input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.calendar-button {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 7px;
+  background: var(--india-post-red);
+  color: #FFFFFF;
+  transition: background 150ms ease;
+}
+
+.calendar-button:hover {
+  background: var(--india-post-dark);
+}
+
+.calendar-button svg {
+  width: 18px;
+  height: 18px;
+  stroke: #FFFFFF;
+  color: #FFFFFF;
+}
+
+.subsection-title {
+  margin: 2px 0 16px;
+  color: var(--india-post-dark);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.subsection-title:not(:first-of-type) {
+  margin-top: 27px;
+}
+
+.revenue-panel {
+  margin-top: 25px;
+  padding: 20px;
+  border: 1px solid var(--red-border);
+  border-radius: 13px;
+  background: linear-gradient(145deg, #FFF9F9, #FDEBEC);
+}
+
+.revenue-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.revenue-eyebrow {
+  margin: 0 0 3px;
+  color: var(--india-post-red);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+}
+
+.revenue-heading h4 {
+  margin: 0;
+  color: var(--india-post-dark);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.revenue-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--india-post-red);
+  color: #FFFFFF;
+}
+
+.revenue-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.revenue-breakdown {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.revenue-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 11px;
+  border: 1px solid rgba(215, 25, 32, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+}
+
+.revenue-line span {
+  color: #655456;
+}
+
+.revenue-line strong {
+  color: #3D2022;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.total-revenue {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 13px;
+  padding-top: 15px;
+  border-top: 1px solid var(--red-border);
+  color: var(--india-post-dark);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.total-revenue strong {
+  color: var(--india-post-red);
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.revenue-disclaimer {
+  margin: 10px 0 0;
+  color: #80696B;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 22px 0 12px;
+}
+
+.button {
+  min-height: 44px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  transition: transform 150ms ease, background 150ms ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+  transform: none;
+}
+
+.button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.button-primary {
+  color: #FFFFFF;
+  background: var(--india-post-red);
+  box-shadow: 0 5px 14px rgba(215, 25, 32, 0.2);
+}
+
+.button-primary:hover {
+  background: var(--india-post-dark);
+}
+
+.button-secondary {
+  color: #584649;
+  border-color: #DED0D2;
+  background: #FFFFFF;
+}
+
+.button-secondary:hover {
+  background: #FFF5F5;
+}
+
+.button-outline {
+  color: var(--india-post-red);
+  border-color: #E6A1A5;
+  background: #FFFFFF;
+}
+
+.button-outline:hover {
+  background: var(--red-light);
+}
+
+.form-status {
+  min-height: 0;
+  margin: 12px 0 0;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 650;
+  text-align: right;
+}
+
+.form-status:not(:empty) {
+  padding: 11px 13px;
+  border-radius: 9px;
+}
+
+.form-status.success {
+  color: #146C43;
+  background: #EAF8F0;
+  border: 1px solid #B6E4C9;
+}
+
+.form-status.error {
+  color: #9B1C1C;
+  background: #FFF0F0;
+  border: 1px solid #F3C1C1;
+}
+
+.form-status.info {
+  color: #6D2A30;
+  background: #FFF5F5;
+  border: 1px solid #F2D0D2;
+}
+
+.page-footer {
+  padding: 24px 0 30px;
+  color: #FFE5E6;
+  font-size: 11px;
+  text-align: center;
+}
+
+.page-footer p {
+  margin: 3px 0;
+}
+
+@media (max-width: 640px) {
+  .top-header {
+    padding: 24px 17px 27px;
+  }
+
+  .brand-mark {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+
+  .brand-mark svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .page-container {
+    width: calc(100% - 22px);
+    margin-top: 20px;
+  }
+
+  .intro-row {
+    align-items: flex-start;
+  }
+
+  .intro-row h2 {
+    font-size: 18px;
+  }
+
+  .required-note {
+    font-size: 10px;
+  }
+
+  .form-card {
+    padding: 17px 14px;
+    border-radius: 13px;
+  }
+
+  .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 15px;
+  }
+
+  .full-width {
+    grid-column: auto;
+  }
+
+  .revenue-breakdown {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .form-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .button {
+    width: 100%;
+  }
+
+  .form-status {
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
